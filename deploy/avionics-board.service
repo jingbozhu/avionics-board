@@ -1,0 +1,60 @@
+# Global Avionics Operations Board — LAN server (systemd unit)
+#
+# ROLE: the single "server Pi". Runs the zero-dependency Node server
+# (`npm run serve` -> node server/index.mjs) that serves the built dist/
+# and the /api/* fleet endpoints on port 8080, bound to 0.0.0.0 (LAN).
+# The three display TVs/Pis are CLIENTS — they do NOT run this unit, they
+# just point a kiosk browser at http://<this-pi-ip>:8080/.
+#
+# Install (run deploy/install-server.sh, or by hand):
+#   sudo cp deploy/avionics-board.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now avionics-board.service
+#
+# Edit User=, WorkingDirectory= and the npm path below if your deploy
+# differs from the defaults (user `admin`, project at /home/admin/avionics-board).
+#
+# !! DO NOT enable this on `piserver` (the insider-tracker host). That box
+#    runs the insider-tracker Docker stack + Postgres, has OOM history and
+#    NO swap. Use a dedicated server Pi, or add swap + a MemoryMax budget
+#    first. See README.md "Where to run this".
+
+[Unit]
+Description=Global Avionics Operations Board — LAN kiosk server
+Documentation=https://github.com/your-org/avionics-board
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=admin
+Group=admin
+WorkingDirectory=/home/admin/avionics-board
+
+# The app is fully offline at runtime; PORT can be overridden here.
+Environment=NODE_ENV=production
+Environment=PORT=8080
+
+# `npm run serve` == `node server/index.mjs`. /usr/bin/env resolves npm on
+# the unit's PATH (covers both /usr/bin/npm and /usr/local/bin/npm).
+ExecStart=/usr/bin/env npm run serve
+
+Restart=always
+RestartSec=3
+# Don't give up after repeated fast crashes — this is a 24/7 wall board.
+StartLimitIntervalSec=0
+
+# --- Resource guardrails (the Node server is tiny; this just caps blast radius).
+# Uncomment on a shared/low-RAM host. systemd will restart (Restart=always)
+# if the cgroup is OOM-killed rather than letting it take the box down.
+#MemoryMax=200M
+#MemoryHigh=150M
+
+# --- Light hardening. The service only needs to read the project tree and
+# write server/fleet-data.json inside WorkingDirectory.
+NoNewPrivileges=true
+ProtectSystem=full
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,12 @@
+# Nightly kiosk reload timer (pairs with avionics-reload.service).
+# Fires at 04:00 local time every day. Adjust OnCalendar to taste.
+
+[Unit]
+Description=Nightly Avionics Board kiosk reload
+
+[Timer]
+OnCalendar=*-*-* 04:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

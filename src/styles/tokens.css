@@ -1,0 +1,36 @@
+/* Design tokens as CSS custom properties (verbatim from the design handoff).
+   --accent* default to amber; App overrides them on :root from the selected accent. */
+:root {
+  --bg-base: #04060c;
+  --page-grad: radial-gradient(125% 90% at 50% -16%, #0e1d31 0%, #070d18 52%, #04060c 100%);
+
+  --card-bg: linear-gradient(180deg, rgba(18, 28, 45, 0.9), rgba(9, 15, 25, 0.88));
+  --card-border: rgba(120, 150, 190, 0.13);
+  --card-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 22px 46px -26px rgba(0, 0, 0, 0.85);
+
+  --accent: #ff9e3d;
+  --accent-light: #ffc874;
+  --accent-value: #ffb454;
+  --logo-grad: linear-gradient(135deg, #ffc56a, #ff7a2e);
+  --btn-grad: linear-gradient(135deg, #ffc56a, #ff8a3a);
+
+  --text-primary: #eef3fb;
+  --text-primary-2: #f1f5fc;
+  --text-secondary: #8aa0bd;
+  --text-muted: #6e84a2;
+  --text-subtle: #7e92ad;
+
+  --pill-text: #9fb3cc;
+  --pill-bg: rgba(120, 150, 190, 0.1);
+  --pill-border: rgba(120, 150, 190, 0.18);
+
+  --status-green: #5fd28a;
+  --status-amber: #ff9e3d;
+  --hairline: rgba(120, 150, 190, 0.18);
+  --hairline-soft: rgba(120, 150, 190, 0.1);
+  --danger: #ff6a52;
+
+  --font-body: 'Saira', system-ui, sans-serif;
+  --font-cond: 'Saira Condensed', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}

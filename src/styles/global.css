@@ -1,0 +1,32 @@
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+}
+#app {
+  height: 100%;
+}
+input,
+select {
+  font-family: var(--font-mono);
+}
+::placeholder {
+  color: #4a5b73;
+}
+/* Status dot pulse on the display board */
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}

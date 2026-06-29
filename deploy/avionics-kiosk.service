@@ -1,0 +1,39 @@
+# Global Avionics Operations Board — display kiosk (systemd USER unit)
+#
+# ROLE: runs on each of the THREE display Pis/TVs. Launches Chromium in
+# fullscreen kiosk mode pointed at the server Pi. This is a CLIENT — it does
+# NOT serve anything.
+#
+# This is a *user* service (it needs the graphical session / $DISPLAY), so it
+# installs under ~/.config/systemd/user, not /etc/systemd/system.
+#
+# Install on each display Pi (as the desktop login user):
+#   mkdir -p ~/.config/systemd/user
+#   cp deploy/avionics-kiosk.service ~/.config/systemd/user/
+#   # edit BOARD_URL below to the server Pi's LAN address, then:
+#   loginctl enable-linger "$USER"          # start at boot without an interactive login
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now avionics-kiosk.service
+#
+# Adjust ExecStart's path if the project lives somewhere other than
+# /home/admin/avionics-board on the display Pi (the kiosk script can also be
+# copied standalone — it has no project dependencies).
+
+[Unit]
+Description=Avionics Board display kiosk (Chromium)
+# Wait for the graphical session to be ready.
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+# >>> EDIT THIS to the server Pi's LAN address <<<
+Environment=BOARD_URL=http://192.168.1.50:8080/
+# X11 session display; harmless under Wayland-with-Xwayland.
+Environment=DISPLAY=:0
+ExecStart=/home/admin/avionics-board/deploy/kiosk-launch.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=graphical-session.target

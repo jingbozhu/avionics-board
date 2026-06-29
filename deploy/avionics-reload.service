@@ -1,0 +1,18 @@
+# Global Avionics Operations Board — nightly kiosk reload (systemd USER unit)
+#
+# OPTIONAL. Restarts the Chromium kiosk once a night to shed any browser
+# memory creep and pick up a fresh build, on a board that may run for weeks.
+# The app already pauses the globe rAF when the tab is hidden and persists
+# nothing client-side, so this is belt-and-suspenders, not required.
+#
+# Install on each display Pi (pairs with avionics-reload.timer):
+#   cp deploy/avionics-reload.service deploy/avionics-reload.timer ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now avionics-reload.timer
+
+[Unit]
+Description=Nightly restart of the Avionics Board display kiosk
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/systemctl --user restart avionics-kiosk.service

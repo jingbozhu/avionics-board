@@ -1,0 +1,30 @@
+{
+  "name": "avionics-board",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Global Avionics Operations Board — offline LAN kiosk dashboard (Preact + Vite + tiny Node server)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "serve": "node server/index.mjs"
+  },
+  "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5.1.0",
+    "@fontsource/saira": "^5.1.0",
+    "@fontsource/saira-condensed": "^5.1.0",
+    "preact": "^10.24.3"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.9.1",
+    "@types/node": "^26.0.1",
+    "jsdom": "^25.0.1",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.7",
+    "vitest": "^2.1.8"
+  }
+}
