@@ -20,7 +20,8 @@ import { readFile, readFileSync, writeFileSync, existsSync } from 'node:fs';
 
 // --- paths (no node:path / node:url — keep the import surface to http+fs) -----
 const HERE = import.meta.dirname; // .../avionics-board/server
-const ROOT = HERE.slice(0, HERE.lastIndexOf('/')); // .../avionics-board
+// Separator-agnostic dirname: import.meta.dirname uses backslashes on Windows.
+const ROOT = HERE.slice(0, Math.max(HERE.lastIndexOf('/'), HERE.lastIndexOf('\\'))); // .../avionics-board
 const DIST = ROOT + '/dist';
 const DATA_FILE = HERE + '/fleet-data.json';
 
@@ -193,7 +194,9 @@ function readBody(req) {
 // --- static file serving (SPA fallback) --------------------------------------
 function serveStatic(req, res, pathname) {
   // Strip empty / '.' / '..' segments → no path traversal out of dist/.
-  const segs = pathname.split('/').filter((s) => s && s !== '.' && s !== '..');
+  // Split on '\' too: Windows fs treats it as a separator, so an encoded %5C
+  // must not smuggle a '..' segment past the filter.
+  const segs = pathname.split(/[/\\]/).filter((s) => s && s !== '.' && s !== '..');
   const last = segs.length ? segs[segs.length - 1] : '';
   const wantsHtml = segs.length === 0 || !/\.[a-z0-9]+$/i.test(last);
   const filePath = segs.length ? DIST + '/' + segs.join('/') : DIST + '/index.html';
