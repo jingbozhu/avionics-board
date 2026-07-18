@@ -9,13 +9,17 @@
 //   sphere radius        = 0.40 * 760
 //   atmosphere ring max  = d ≤ 1.24
 //   EARTH_LON_VIEW       = -100 (degrees, frames the Americas)
+//   TILT_DEG             = 25 (screen-space axial tilt, pole leans right)
 //   limb                 = 0.54 + 0.46 * nz
-//   ambient / glow base  = (40, 94, 182) * t²
+//   inner-rim ambient    = (40, 94, 182) * d²
+//   atmosphere glow      = chroma (40, 94, 182), alpha 255·t² → fades to
+//                          TRANSPARENT so it merges into any page background
 
 export const BUFFER = 760;
 export const RADIUS = 0.40 * 760; // 304
 export const ATMO_MAX = 1.24;
 export const EARTH_LON_VIEW = -100; // degrees
+export const TILT_DEG = 25; // axial tilt on screen (Earth's real ~23.44°, rounded)
 
 /** Per-frame-invariant buffers for the spinning Earth. */
 export interface Precomputed {
@@ -42,9 +46,8 @@ export interface Precomputed {
   atmo: {
     count: number;
     out: Int32Array;
-    r: Float32Array;
-    g: Float32Array;
-    b: Float32Array;
+    /** Per-pixel alpha 0..255 (= 255·t²); chroma is the constant (40, 94, 182). */
+    a: Float32Array;
   };
 }
 
@@ -59,6 +62,12 @@ export function precompute(W: number, H: number, texW: number, texH: number): Pr
   const lonView = (EARTH_LON_VIEW * Math.PI) / 180;
   const TWO_PI = Math.PI * 2;
   const ATMO2 = ATMO_MAX * ATMO_MAX;
+  // Axial tilt: rotate the screen→sphere sampling frame so the north pole
+  // leans TILT_DEG to the right on screen. Radius (d²) is rotation-invariant,
+  // so the atmosphere ring, limb, and ambient are unaffected.
+  const tilt = (TILT_DEG * Math.PI) / 180;
+  const cosT = Math.cos(tilt);
+  const sinT = Math.sin(tilt);
 
   // Pass 1: count sphere (d ≤ 1) and atmosphere-ring (1 < d ≤ 1.24) pixels so we
   // can allocate exactly once.
@@ -91,9 +100,7 @@ export function precompute(W: number, H: number, texW: number, texH: number): Pr
   const atmo = {
     count: aCount,
     out: new Int32Array(aCount),
-    r: new Float32Array(aCount),
-    g: new Float32Array(aCount),
-    b: new Float32Array(aCount),
+    a: new Float32Array(aCount),
   };
 
   // Pass 2: fill.
@@ -106,10 +113,13 @@ export function precompute(W: number, H: number, texW: number, texH: number): Pr
       const d2 = sx * sx + sy * sy;
       const i = y * W + x;
       if (d2 <= 1) {
-        const nz = Math.sqrt(1 - d2); // toward the viewer
-        const wy = -sy; // screen y is down → flip so +y is north; wy = sin(lat)
+        const nz = Math.sqrt(1 - d2); // toward the viewer (unchanged by tilt)
+        // Tilted sampling frame (rotation about the view axis).
+        const tx = sx * cosT + sy * sinT;
+        const ty = -sx * sinT + sy * cosT;
+        const wy = -ty; // screen y is down → flip so +y is north; wy = sin(lat)
         const clat = Math.sqrt(1 - wy * wy); // cos(lat) = sqrt(nx²+nz²)
-        const lon = lonView + Math.atan2(sx, nz);
+        const lon = lonView + Math.atan2(tx, nz);
         sphere.out[si] = i * 4;
         sphere.sinLat[si] = wy;
         sphere.clat[si] = clat;
@@ -134,9 +144,7 @@ export function precompute(W: number, H: number, texW: number, texH: number): Pr
         else if (t > 1) t = 1;
         const t2 = t * t;
         atmo.out[ai] = i * 4;
-        atmo.r[ai] = 40 * t2;
-        atmo.g[ai] = 94 * t2;
-        atmo.b[ai] = 182 * t2;
+        atmo.a[ai] = 255 * t2;
         ai++;
       }
     }

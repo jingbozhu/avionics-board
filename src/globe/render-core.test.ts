@@ -59,7 +59,7 @@ function makePre(): Precomputed {
       ambG: Float32Array.from([0, 0]),
       ambB: Float32Array.from([0, 0]),
     },
-    atmo: { count: 0, out: new Int32Array(0), r: new Float32Array(0), g: new Float32Array(0), b: new Float32Array(0) },
+    atmo: { count: 0, out: new Int32Array(0), a: new Float32Array(0) },
   };
 }
 
@@ -109,9 +109,9 @@ describe('renderCore — per-pixel lighting + texture scroll', () => {
 });
 
 describe('paintAtmosphere', () => {
-  it('writes the static ring color with full alpha', () => {
-    const pre: Precomputed = {
-      W: 1,
+  function makeAtmoPre(alphas: number[]): Precomputed {
+    return {
+      W: alphas.length,
       H: 1,
       texW: 1,
       texH: 1,
@@ -130,15 +130,25 @@ describe('paintAtmosphere', () => {
         ambB: new Float32Array(0),
       },
       atmo: {
-        count: 1,
-        out: Int32Array.from([0]),
-        r: Float32Array.from([20]),
-        g: Float32Array.from([47]),
-        b: Float32Array.from([91]),
+        count: alphas.length,
+        out: Int32Array.from(alphas.map((_, i) => i * 4)),
+        a: Float32Array.from(alphas),
       },
     };
+  }
+
+  it('writes the constant glow chroma with the per-pixel alpha fade', () => {
+    const out = new Uint8ClampedArray(8);
+    paintAtmosphere(makeAtmoPre([255, 63.75]), out);
+    // rim pixel: full alpha; outer pixel: 63.75 → rounds to 64
+    expect(Array.from(out.slice(0, 4))).toEqual([40, 94, 182, 255]);
+    expect(Array.from(out.slice(4, 8))).toEqual([40, 94, 182, 64]);
+  });
+
+  it('fades to fully TRANSPARENT (not opaque black) at the outer edge', () => {
     const out = new Uint8ClampedArray(4);
-    paintAtmosphere(pre, out);
-    expect(Array.from(out)).toEqual([20, 47, 91, 255]);
+    paintAtmosphere(makeAtmoPre([0]), out);
+    // alpha 0 → the page background shows through; no black band.
+    expect(out[3]).toBe(0);
   });
 });

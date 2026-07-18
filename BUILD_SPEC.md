@@ -65,11 +65,13 @@ serves the app; **three browser TVs** load `http://<pi-ip>:8080/` as read-only d
 - `textures.ts`: `loadGlobeAssets(dayUrl, nightUrl): Promise<GlobeAssets>` — load the two `<img>` (already
   2048×1024; **no downscaling**). On error reject; caller renders a static fallback (must not crash board).
 - `precompute.ts`: build typed-array buffers for the fixed **760×760** buffer (sphere radius `0.40*760`,
-  atmosphere to `d≤1.24`), `EARTH_LON_VIEW=-100`. Pure given canvas size + decoded texture pixel arrays.
+  atmosphere to `d≤1.24`), `EARTH_LON_VIEW=-100`, axial tilt `TILT_DEG=25` (sampling frame rotated
+  about the view axis; pole leans right). Pure given canvas size + decoded texture pixel arrays.
 - `render-core.ts`: pure per-pixel loop writing a `Uint8ClampedArray`. Preserve **exactly**:
   `cosTerm=cosLon*cos(θ)−sinLon*sin(θ)`, `diffuse=sinLat*sd+clat*cd*cosTerm`,
   `dayAmt=smoothstep(-0.13,0.13,diffuse)`, `dayWeight=(0.42+0.64*max(0,diffuse))*limb*dayAmt`,
-  `nightWeight=limb*(1-dayAmt)*1.18`, `limb=0.54+0.46*nz`, ambient `(40,94,182)*t²`, clamp 255.
+  `nightWeight=limb*(1-dayAmt)*1.18`, `limb=0.54+0.46*nz`, inner-rim ambient `(40,94,182)*d²`,
+  atmosphere glow chroma `(40,94,182)` with alpha `255*t²` (fades to transparent), clamp 255.
   **Texture column wrap MUST be `((u%1)+1)%1`** (bare `u%1` goes negative → black seam).
   Tests: wrap function; a few pixels at a known timestamp vs hand-computed values.
 - `loop.ts`: rAF driver throttled to ≥50ms (~20fps); pauses on `document.hidden`/`visibilitychange`;

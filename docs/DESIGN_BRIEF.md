@@ -44,7 +44,10 @@ Auth: `sessionStorage['fleet.admin']==='1'` keeps it unlocked for the session.
 - Precompute once per visible sphere pixel into typed arrays: screen->sphere normal (nx, wy=sinLat,
   nz), cosLat, lonBase = EARTH_LON_VIEW(-100 deg) + atan2(nx,nz), cos/sin(lonBase),
   baseU = lonBase/2pi + 0.5, texture row from lat, limb = 0.54 + 0.46*nz, inner-rim blue ambient.
-  Atmosphere ring for d in (1, 1.24] as fading blue glow (vec3 ~ (40,94,182)*t^2).
+  Axial tilt TILT_DEG=25: the screen->sphere sampling frame is rotated about the view axis so the
+  north pole leans 25 deg right on screen (d² is rotation-invariant, so ring/limb/ambient unchanged).
+  Atmosphere ring for d in (1, 1.24]: constant chroma (40,94,182) with ALPHA = 255*t^2 — the glow
+  fades to transparent (not to opaque black) so it merges into any page background.
 - Per frame (rAF, throttled to ~50ms ~ 20fps):
   s = (t/1000)/earthPeriod turns; phi = s*2pi.
   Sun: sunLon = -(UTC_hours - 12)*15 deg; decl = 23.44deg*sin(2pi*(doy-81)/365); sd,cd.

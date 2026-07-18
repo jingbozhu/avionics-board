@@ -95,8 +95,12 @@ and copy `dist/` + `server/` to the Pi).
 - **The globe is a CPU canvas renderer (no WebGL) by deliberate choice** for the
   Pi 5: a fixed 760×760 buffer, one reused `ImageData`, throttled to ~20 fps,
   paused when the tab is hidden. Magic constants (globe weights, `earthPeriod=300`,
-  `EARTH_LON_VIEW=−100`, atmosphere ring, clip-paths, colors, timings) are copied
-  verbatim from the design and must not be "cleaned up".
+  `EARTH_LON_VIEW=−100`, `TILT_DEG=25` axial tilt, clip-paths, colors, timings)
+  are copied verbatim from the design and must not be "cleaned up". (Two
+  owner-approved deviations from the original prototype: the 25° axial tilt, and
+  the atmosphere ring now alpha-fades to transparent — constant chroma
+  `(40,94,182)`, alpha `255·t²` — instead of RGB-fading to opaque black, so the
+  glow merges into any page background.)
 - **Fit-to-height** scales the 3×2 card grid so all six cards always fit with no
   scrollbar, recomputing on resize, airframe-count change, and `document.fonts.ready`.
 

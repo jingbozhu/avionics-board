@@ -14,7 +14,9 @@
 //   dayWeight = (0.42 + 0.64*max(0,diffuse)) * limb * dayAmt
 //   nightWgt  = limb * (1 - dayAmt) * 1.18
 //   limb      = 0.54 + 0.46*nz                    (baked in precompute)
-//   ambient   = (40,94,182) * t²                  (baked in precompute)
+//   ambient   = (40,94,182) * d²                  (baked in precompute)
+//   atmo glow = chroma (40,94,182), alpha 255·t²  (baked in precompute) —
+//               alpha-faded so the ring merges into the page background
 //   color     = day*dayWeight + night*nightWgt + ambient  (clamp 255)
 
 import type { SunParams } from '../types';
@@ -41,15 +43,19 @@ export function smoothstep(e0: number, e1: number, x: number): number {
  * Paint the static blue atmosphere ring. These pixels never change between
  * frames, so this is called once at init against the reused ImageData and then
  * left untouched (putImageData re-emits them every frame for free).
+ *
+ * The glow is constant chroma (40, 94, 182) with alpha fading 255→0 across the
+ * ring, so it composites over — and merges into — any page background instead
+ * of baking an "over black" assumption into opaque pixels.
  */
 export function paintAtmosphere(pre: Precomputed, out: Uint8ClampedArray): void {
   const a = pre.atmo;
   for (let j = 0; j < a.count; j++) {
     const o = a.out[j];
-    out[o] = a.r[j];
-    out[o + 1] = a.g[j];
-    out[o + 2] = a.b[j];
-    out[o + 3] = 255;
+    out[o] = 40;
+    out[o + 1] = 94;
+    out[o + 2] = 182;
+    out[o + 3] = a.a[j];
   }
 }
 
