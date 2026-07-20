@@ -8,6 +8,8 @@ import { useRoute } from '../routing';
 import { GlobeCanvas } from '../globe/GlobeCanvas';
 import { DisplayView } from '../views/display/DisplayView';
 import { AdminView } from '../views/admin/AdminView';
+import { IaiView } from '../iai/IaiView';
+import { IaiConsole } from '../iai/IaiConsole';
 import { ACCENTS, DEFAULT_ACCENT } from '../theme/tokens';
 
 export function App(): JSX.Element {
@@ -23,13 +25,20 @@ export function App(): JSX.Element {
     r.setProperty('--heli-filter', acc.filter);
   }, []);
 
+  // The IAI routes are the board's globe turned inward: the geodesic field takes
+  // the Earth's place behind everything, so the globe stands down there.
+  const isIai = route === 'iai' || route === 'iai-console';
+
   return (
     <div style={root}>
       <div style={gridOverlay} aria-hidden="true" />
       <div style={stars} aria-hidden="true" />
-      <div style={glow} aria-hidden="true" />
-      <GlobeCanvas />
-      {route === 'admin' ? <AdminView /> : <DisplayView />}
+      {!isIai && <div style={glow} aria-hidden="true" />}
+      {!isIai && <GlobeCanvas />}
+      {route === 'admin' && <AdminView />}
+      {route === 'display' && <DisplayView />}
+      {route === 'iai' && <IaiView />}
+      {route === 'iai-console' && <IaiConsole />}
     </div>
   );
 }

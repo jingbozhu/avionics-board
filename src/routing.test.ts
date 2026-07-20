@@ -20,4 +20,12 @@ describe('parseHash', () => {
     expect(parseHash('#settings')).toBe('display');
     expect(parseHash('#ADMIN')).toBe('display'); // case-sensitive, faithful to source
   });
+
+  it('maps the IAI routes', () => {
+    expect(parseHash('#iai')).toBe('iai');
+    expect(parseHash('#/iai')).toBe('iai');
+    expect(parseHash('#iai/console')).toBe('iai-console');
+    expect(parseHash('#IAI')).toBe('display'); // case-sensitive, like #admin
+    expect(parseHash('#iai/other')).toBe('display');
+  });
 });
