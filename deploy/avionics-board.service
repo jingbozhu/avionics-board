@@ -24,6 +24,11 @@ Description=Global Avionics Operations Board — LAN kiosk server
 Documentation=https://github.com/your-org/avionics-board
 After=network-online.target
 Wants=network-online.target
+# Don't give up after repeated fast crashes — this is a 24/7 wall board.
+# MUST live in [Unit]: systemd ignores StartLimitIntervalSec in [Service],
+# which would silently cap us at the default 5-restarts-per-10s and leave
+# the TVs dark after a crash loop.
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple
@@ -41,14 +46,12 @@ ExecStart=/usr/bin/env npm run serve
 
 Restart=always
 RestartSec=3
-# Don't give up after repeated fast crashes — this is a 24/7 wall board.
-StartLimitIntervalSec=0
 
 # --- Resource guardrails (the Node server is tiny; this just caps blast radius).
 # Uncomment on a shared/low-RAM host. systemd will restart (Restart=always)
 # if the cgroup is OOM-killed rather than letting it take the box down.
-#MemoryMax=200M
-#MemoryHigh=150M
+MemoryMax=200M
+MemoryHigh=150M
 
 # --- Light hardening. The service only needs to read the project tree and
 # write server/fleet-data.json inside WorkingDirectory.
