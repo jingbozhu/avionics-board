@@ -8,10 +8,10 @@
 // the "must cover 20% of the viewport" size rule (Blink video_wake_lock.cc).
 //
 // So: a hidden canvas animates at 5 fps into captureStream(), feeding a small
-// always-visible corner <video> drawn in the board's palette so it reads as a
-// faint breathing status LED. The "small stream video" mode of this exact
-// recipe survived the sleep timer on the wall TVs; the Wake Lock API and
-// control modes did not.
+// always-visible corner <video> painted solid --bg-base (frames differ by one
+// imperceptible color bit) so it melts into the page background. The "small
+// stream video" mode of this exact recipe survived the sleep timer on the wall
+// TVs; the Wake Lock API and control modes did not.
 //
 // The Wake Lock API is still requested opportunistically as a free extra for
 // browsers that do honor it (admin sessions on laptops/phones).
@@ -53,7 +53,7 @@ export function startKeepAwake(): void {
   // it; pointer-events off so it can never eat a click (admin included).
   Object.assign(video.style, {
     position: 'fixed',
-    right: '10px',
+    left: '10px',
     bottom: '10px',
     width: `${VIEW_W}px`,
     height: `${VIEW_H}px`,
@@ -65,17 +65,17 @@ export function startKeepAwake(): void {
 
   document.body.append(canvas, video);
 
-  const t0 = Date.now();
+  // The wake lock needs a *playing* video, not visible pixels — so draw the
+  // most invisible thing that still yields distinct frames: solid --bg-base
+  // with the blue channel alternating by one bit per tick. Invisibility must
+  // come from the content, NOT from CSS opacity/overlays on the element:
+  // Chromium's IntersectionObserver-based heuristics have to keep seeing a
+  // genuinely visible video or the wake lock is dropped.
+  let flip = false;
   const draw = () => {
-    const t = (Date.now() - t0) / 1000;
-    ctx.fillStyle = '#04060c'; // --bg-base
+    flip = !flip;
+    ctx.fillStyle = flip ? '#04060d' : '#04060c'; // --bg-base ± one bit
     ctx.fillRect(0, 0, BUF_W, BUF_H);
-    // Dim breathing dot in the board's muted blue-grey — reads as a status LED.
-    const pulse = 0.16 + 0.18 * (0.5 + 0.5 * Math.sin(t * 1.1));
-    ctx.fillStyle = `rgba(127, 160, 200, ${pulse.toFixed(3)})`;
-    ctx.beginPath();
-    ctx.arc(BUF_W - 40, BUF_H / 2, 10, 0, Math.PI * 2);
-    ctx.fill();
   };
 
   let timer: number | undefined;
