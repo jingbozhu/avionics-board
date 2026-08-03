@@ -5,6 +5,7 @@
 import { useEffect } from 'preact/hooks';
 import type { JSX } from 'preact';
 import { useRoute } from '../routing';
+import { startKeepAwake } from '../kiosk/keepAwake';
 import { GlobeCanvas } from '../globe/GlobeCanvas';
 import { DisplayView } from '../views/display/DisplayView';
 import { AdminView } from '../views/admin/AdminView';
@@ -21,6 +22,11 @@ export function App(): JSX.Element {
     r.setProperty('--accent', acc.c);
     r.setProperty('--accent-light', acc.light);
     r.setProperty('--heli-filter', acc.filter);
+  }, []);
+
+  // Hold a screen wake lock so the Fire TV wall never force-sleeps mid-shift.
+  useEffect(() => {
+    startKeepAwake();
   }, []);
 
   return (
