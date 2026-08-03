@@ -8,10 +8,12 @@
 // the "must cover 20% of the viewport" size rule (Blink video_wake_lock.cc).
 //
 // So: a hidden canvas animates at 5 fps into captureStream(), feeding a small
-// always-visible corner <video> painted solid --bg-base (frames differ by one
-// imperceptible color bit) so it melts into the page background. The "small
-// stream video" mode of this exact recipe survived the sleep timer on the wall
-// TVs; the Wake Lock API and control modes did not.
+// corner <video> tucked BEHIND the app (first child of <body>, painted over by
+// the opaque board). Chromium's wake-lock visibility check is a plain
+// IntersectionObserver — geometry only, occlusion is not tracked — so the
+// element counts as fully visible while the board hides it completely. The
+// "small stream video" mode of this recipe survived the sleep timer on the
+// wall TVs; the Wake Lock API and control modes did not.
 //
 // The Wake Lock API is still requested opportunistically as a free extra for
 // browsers that do honor it (admin sessions on laptops/phones).
@@ -48,29 +50,33 @@ export function startKeepAwake(): void {
   video.autoplay = true;
   video.setAttribute('playsinline', '');
   video.setAttribute('aria-hidden', 'true');
-  // Must stay genuinely visible: Chromium only holds the wake lock while the
-  // element is ≥75% within the viewport. Top of the stack so nothing occludes
-  // it; pointer-events off so it can never eat a click (admin included).
+  // Chromium holds the wake lock only while the element's viewport
+  // intersection ratio is ≥75% — a plain IntersectionObserver check: geometry
+  // only, occlusion not tracked. So the video may sit BEHIND the opaque app
+  // root without losing the lock, but must never be display:none or pushed
+  // off-viewport. It still paints --bg-base frames in case it's ever exposed.
   Object.assign(video.style, {
     position: 'fixed',
     left: '10px',
     bottom: '10px',
     width: `${VIEW_W}px`,
     height: `${VIEW_H}px`,
-    zIndex: '9999',
     pointerEvents: 'none',
     background: '#04060c',
   } satisfies Partial<CSSStyleDeclaration>);
   video.srcObject = canvas.captureStream(1000 / TICK_MS);
 
-  document.body.append(canvas, video);
+  document.body.append(canvas);
+  // First child of <body>: the app mount (#app) comes later in DOM order, so
+  // with z-index auto everywhere the board always paints over the video — it
+  // can never block a card again.
+  document.body.prepend(video);
 
-  // The wake lock needs a *playing* video, not visible pixels — so draw the
-  // most invisible thing that still yields distinct frames: solid --bg-base
-  // with the blue channel alternating by one bit per tick. Invisibility must
-  // come from the content, NOT from CSS opacity/overlays on the element:
-  // Chromium's IntersectionObserver-based heuristics have to keep seeing a
-  // genuinely visible video or the wake lock is dropped.
+  // captureStream only emits on draw calls and the wake lock wants a video
+  // with fresh frames — so draw the cheapest thing that still yields distinct
+  // frames: solid --bg-base with the blue channel alternating one bit per
+  // tick. Doubles as camouflage if the video is ever exposed from behind the
+  // board.
   let flip = false;
   const draw = () => {
     flip = !flip;
