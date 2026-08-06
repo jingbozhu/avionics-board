@@ -216,6 +216,16 @@ Display Pis pick up the new build on their next reload (nightly timer, or
     below that, so a small reported viewport shrinks the board but never clips it
     (a scale under 1 there is normal, not a fault). If the clock is still cut off,
     the TV is **overscanning** — cropping the picture in hardware.
+- **A deploy didn't take / the page behaves like an old build:** the server sends
+  `Cache-Control: no-store` on `index.html` (the shell that names the current
+  hashed bundle) and `immutable` on `/assets/*` (Vite content-hashes those, so
+  the filename changes every build). Before that policy existed, responses
+  carried no `Cache-Control`, `ETag` or `Last-Modified` at all, so a browser
+  that had cached the shell could stay pinned to a months-old bundle with no way
+  to revalidate. If a client still looks stale, hard-reload it once
+  (Ctrl/Cmd+Shift+R) to clear what it cached under the old policy — after that
+  an ordinary reload is enough. Confirm what a client should be loading with
+  `curl -s http://<server-ip>:8080/ | grep -o 'index-[^.]*\.js'`.
 - **Clock is wrong on one TV:** the board ticks from the *TV's own* clock, not the
   server's. `LOCAL` is real Pacific time (label flips PST/PDT) and `UTC` does no
   offset arithmetic at all, so no timezone setting can shift them — only a wrong

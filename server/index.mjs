@@ -173,9 +173,29 @@ function mimeFor(path) {
   return MIME[ext] || 'application/octet-stream';
 }
 
-function send(res, status, type, body, method) {
+// Cache policy. Without these the responses carry NO Cache-Control, ETag or
+// Last-Modified at all, so a browser that cached index.html has no validator to
+// revalidate against and can keep loading a stale hashed bundle indefinitely —
+// on a 24/7 kiosk that means a TV pinned to a months-old build after a deploy.
+//
+// Vite content-hashes everything under /assets/, so those filenames change on
+// every build and can be cached forever. index.html is the shell that NAMES the
+// current hashes, so it must never be reused without asking us first.
+const CACHE_IMMUTABLE = 'public, max-age=31536000, immutable';
+const CACHE_NEVER = 'no-store, must-revalidate';
+
+/** Cache-Control for a dist-relative request path. */
+function cacheFor(pathname) {
+  return /^\/assets\//.test(pathname) ? CACHE_IMMUTABLE : CACHE_NEVER;
+}
+
+function send(res, status, type, body, method, cache) {
   const buf = Buffer.isBuffer(body) ? body : Buffer.from(String(body));
-  res.writeHead(status, { 'Content-Type': type, 'Content-Length': buf.length });
+  const headers = { 'Content-Type': type, 'Content-Length': buf.length };
+  // Default to never-cache: the only thing safe to keep is a hashed asset, and
+  // that caller passes CACHE_IMMUTABLE explicitly.
+  headers['Cache-Control'] = cache || CACHE_NEVER;
+  res.writeHead(status, headers);
   if (method === 'HEAD') res.end();
   else res.end(buf);
 }
@@ -216,7 +236,7 @@ function serveStatic(req, res, pathname) {
 
   readFile(filePath, (err, buf) => {
     if (!err) {
-      send(res, 200, mimeFor(filePath), buf, req.method);
+      send(res, 200, mimeFor(filePath), buf, req.method, cacheFor(pathname));
       return;
     }
     if (wantsHtml) {
