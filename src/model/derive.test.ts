@@ -10,7 +10,7 @@ const base: Airframe = {
   registration: 'N412HL',
   description: 'Replace VHF-1 transceiver.',
   system: '2',
-  tech: '4417',
+  tech: 'JZ',
   pct: 82,
   eta: 'May 20, 2025',
   flag: 'on-track',
@@ -85,7 +85,7 @@ describe('toCardVM', () => {
   });
 
   it('labels the tech, and stays blank when unassigned', () => {
-    expect(toCardVM(base).techLabel).toBe('TECH 4417');
+    expect(toCardVM(base).techLabel).toBe('TECH JZ');
     expect(toCardVM({ ...base, tech: '' }).techLabel).toBe('');
   });
 
@@ -112,9 +112,12 @@ describe('normalizeAirframe — pre-split records', () => {
     expect(a.tech).toBe('');
   });
 
-  it('keeps digits only in tech', () => {
-    expect(normalizeAirframe({ id: 'x', tech: '44a17' }).tech).toBe('4417');
-    expect(normalizeAirframe({ id: 'x', tech: '0042' }).tech).toBe('0042');
+  it('keeps letters only in tech, upper-cased and capped at 4', () => {
+    expect(normalizeAirframe({ id: 'x', tech: 'j.z.' }).tech).toBe('JZ');
+    expect(normalizeAirframe({ id: 'x', tech: 'Jane Zhu' }).tech).toBe('JANE');
+    expect(normalizeAirframe({ id: 'x', tech: '44a17' }).tech).toBe('A');
+    // Employee numbers are no longer a valid tech; they normalize to unassigned.
+    expect(normalizeAirframe({ id: 'x', tech: '0042' }).tech).toBe('');
   });
 
   it('falls back to system "2" for anything unrecognized', () => {

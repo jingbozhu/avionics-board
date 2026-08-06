@@ -54,10 +54,13 @@ Auth: `sessionStorage['fleet.admin']==='1'` keeps it unlocked for the session.
   the list on every OTHER tab/display. (storage event does NOT fire in the writing tab, so the
   editing view must also update via its own local state.)
 - Airframe object: { id, workOrder, registration, description, system:'1|2|3|4|5|6|full',
-  tech:string (digits only), pct:0..100, eta:string, flag:'on-track|at-risk|complete' }.
+  tech:string (name initials, A-Z only, upper-cased, max 4), pct:0..100, eta:string,
+  flag:'on-track|at-risk|complete' }.
   Reshaped ahead of a real database: the original single `name` split into `workOrder` +
   `registration`, `category` became the free-prose `description`, the six named systems became
-  numbers, and `tech` (employee number) is new. `normalizeAirframe` maps the old
+  numbers, and `tech` (the assigned technician) is new. It started as an employee number
+  and became **name initials** on 2026-08-06 at management's request; any stored employee
+  number normalizes to `''` (unassigned) on the next read, by design. `normalizeAirframe` maps the old
   `name`/`category`/`cockpit…radar` values forward so stored fleets still load.
 - `system` picks which part of the heli art lights: '1'..'6' are the six tuned regions,
   'full' lights the WHOLE airframe (a whole-aircraft project). Unknown → '2'.
@@ -120,7 +123,7 @@ and when airframe count changes.
   per `system` via clip-path inset to light only the upgraded part), work-order line (mono 10.5px,
   .16em, muted) above the registration, project description (free prose, body 12.5px, clamped to
   3 lines), big %, progress bar (width transition .7s), footer (calendar + ETA/Completed date,
-  then `TECH <n>` on its own line beneath it when assigned — mono 10.5px, .16em, muted, indented
+  then `TECH <initials>` on its own line beneath it when assigned — mono 10.5px, .16em, muted, indented
   22px so it aligns under the date text; status dot+label on the right, vertically centred).
 - HILITE clip map (inset top right bottom left), tuned to 1112x376 heli art:
   1 inset(26% 68% 30% 15%); 2 inset(38% 49% 22% 29%); 3 inset(40% 41% 22% 37%);

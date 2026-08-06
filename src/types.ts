@@ -14,7 +14,7 @@ export interface Airframe {
   registration: string;
   description: string; // free prose (later AI-generated)
   system: SystemKey;
-  tech: string; // employee number; digits only, string so leading zeros survive
+  tech: string; // assigned technician's name initials; A-Z only, upper-case, max 4
   pct: number; // 0..100
   eta: string;
   flag: StatusFlag;
@@ -67,7 +67,7 @@ export interface CardVM {
   workOrder: string;
   registration: string;
   description: string;
-  techLabel: string; // "TECH 4417", or "" when unassigned
+  techLabel: string; // "TECH JZ", or "" when unassigned
   pct: number;
   pctLabel: string; // "82%"
   barPct: string; // "82%"

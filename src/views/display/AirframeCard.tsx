@@ -2,7 +2,7 @@
 // lit in the accent colour (heli-fill clipped over the dimmed heli-line) — the
 // whole airframe for a full-aircraft project — work order, registration, project
 // description, big completion %, animated progress bar, and a footer with the
-// date over the tech number, plus a pulsing status chip. All values come from
+// date over the tech's initials, plus a pulsing status chip. All values come from
 // the CardVM (see derive.ts).
 import type { JSX } from 'preact';
 import type { CardVM } from '../../types';
@@ -196,7 +196,7 @@ const footer: JSX.CSSProperties = {
   fontSize: '12px',
   letterSpacing: '.04em',
 };
-// The date sits on its own line with the tech number stacked beneath it.
+// The date sits on its own line with the tech's initials stacked beneath it.
 const dateBlock: JSX.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',

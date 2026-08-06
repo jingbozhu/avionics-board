@@ -39,12 +39,12 @@ const LEGACY_SYSTEM = { cockpit: '1', comms: '2', mission: '3', nav: '4', autopi
 
 function seed() {
   return [
-    { id: 'p1', workOrder: 'WO-4471', registration: 'N412HL', description: 'Replace VHF-1 transceiver and re-terminate the overhead comms harness; bench-test COM2 before reinstall.', system: '2', tech: '4417', pct: 82, eta: 'May 20, 2025', flag: 'on-track' },
-    { id: 'p2', workOrder: 'WO-4482', registration: 'N135EC', description: 'Glass cockpit modernization — swap the round-dial panel for dual PFD/MFD units and update the pitot-static plumbing.', system: '1', tech: '2093', pct: 47, eta: 'Jun 10, 2025', flag: 'on-track' },
-    { id: 'p3', workOrder: 'WO-4490', registration: 'N139SR', description: 'Full SAR conversion: mission console, hoist provisions, searchlight, FLIR turret and complete cabin rewire.', system: 'full', tech: '7741', pct: 95, eta: 'May 16, 2025', flag: 'at-risk' },
-    { id: 'p4', workOrder: 'WO-4503', registration: 'N145AM', description: 'Navigation upgrade — new GPS/WAAS receiver and antenna, with a database subscription cutover.', system: '4', tech: '3160', pct: 24, eta: 'Jun 30, 2025', flag: 'on-track' },
-    { id: 'p5', workOrder: 'WO-4511', registration: 'N429BT', description: 'Four-axis autopilot install; rig the servos and fly the acceptance profile once the AFCS is signed off.', system: '5', tech: '5528', pct: 64, eta: 'May 28, 2025', flag: 'on-track' },
-    { id: 'p6', workOrder: 'WO-4519', registration: 'N76WX', description: 'Nose-mounted weather radar retrofit, radome refinish and antenna alignment. Closed out and returned to service.', system: '6', tech: '8802', pct: 100, eta: 'May 1, 2025', flag: 'complete' },
+    { id: 'p1', workOrder: 'WO-4471', registration: 'N412HL', description: 'Replace VHF-1 transceiver and re-terminate the overhead comms harness; bench-test COM2 before reinstall.', system: '2', tech: 'JZ', pct: 82, eta: 'May 20, 2025', flag: 'on-track' },
+    { id: 'p2', workOrder: 'WO-4482', registration: 'N135EC', description: 'Glass cockpit modernization — swap the round-dial panel for dual PFD/MFD units and update the pitot-static plumbing.', system: '1', tech: 'MR', pct: 47, eta: 'Jun 10, 2025', flag: 'on-track' },
+    { id: 'p3', workOrder: 'WO-4490', registration: 'N139SR', description: 'Full SAR conversion: mission console, hoist provisions, searchlight, FLIR turret and complete cabin rewire.', system: 'full', tech: 'AL', pct: 95, eta: 'May 16, 2025', flag: 'at-risk' },
+    { id: 'p4', workOrder: 'WO-4503', registration: 'N145AM', description: 'Navigation upgrade — new GPS/WAAS receiver and antenna, with a database subscription cutover.', system: '4', tech: 'DK', pct: 24, eta: 'Jun 30, 2025', flag: 'on-track' },
+    { id: 'p5', workOrder: 'WO-4511', registration: 'N429BT', description: 'Four-axis autopilot install; rig the servos and fly the acceptance profile once the AFCS is signed off.', system: '5', tech: 'SP', pct: 64, eta: 'May 28, 2025', flag: 'on-track' },
+    { id: 'p6', workOrder: 'WO-4519', registration: 'N76WX', description: 'Nose-mounted weather radar retrofit, radome refinish and antenna alignment. Closed out and returned to service.', system: '6', tech: 'TW', pct: 100, eta: 'May 1, 2025', flag: 'complete' },
   ];
 }
 
@@ -69,7 +69,10 @@ function normalizeAirframe(p, idx) {
     registration: registration == null ? '—' : String(registration),
     description: description == null ? '' : String(description),
     system,
-    tech: p.tech == null ? '' : String(p.tech).replace(/\D/g, ''),
+    // Name initials: letters only, upper-cased, max 4. Mirrors normalizeTech
+    // in src/model/airframe.ts — these two MUST stay in lockstep.
+    tech:
+      p.tech == null ? '' : String(p.tech).replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 4),
     pct: clampPct(p.pct == null ? 0 : p.pct),
     eta: p.eta == null ? 'TBD' : String(p.eta),
     flag,

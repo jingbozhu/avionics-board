@@ -106,8 +106,9 @@ function Row({ a }: { a: Airframe }): JSX.Element {
         style={field}
         value={a.tech}
         onInput={set('tech')}
-        inputMode="numeric"
-        aria-label="Tech"
+        autoCapitalize="characters"
+        maxLength={4}
+        aria-label="Tech initials"
       />
 
       <div style={completion}>

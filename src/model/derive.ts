@@ -18,7 +18,7 @@ export function countPad(n: number): string {
  *  - clip is the heli-fill highlight inset for the system (unknown -> '2').
  *  - heliFilter is the accent tint for every system, 'full' included; only the
  *    clip differs, so a full-aircraft row lights the WHOLE airframe in the accent.
- *  - techLabel is "TECH <n>", or "" when no tech is assigned.
+ *  - techLabel is "TECH <initials>", or "" when no tech is assigned.
  *  - status label/color come from STATUS (complete is green, like on-track).
  *  - dateLabel is "Completed: <eta>" when complete, else "ETA: <eta>"; "TBD" when blank.
  */

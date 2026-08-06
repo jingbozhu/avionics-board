@@ -29,7 +29,7 @@ class MockEventSource {
 }
 
 const SERVER_LIST: Airframe[] = [
-  { id: 's1', workOrder: 'WO-1', registration: 'SERVER ONE', description: 'X', system: '4', tech: '11', pct: 10, eta: 'a', flag: 'on-track' },
+  { id: 's1', workOrder: 'WO-1', registration: 'SERVER ONE', description: 'X', system: '4', tech: 'AB', pct: 10, eta: 'a', flag: 'on-track' },
   { id: 's2', workOrder: 'WO-2', registration: 'SERVER TWO', description: 'Y', system: '6', tech: '', pct: 100, eta: 'b', flag: 'complete' },
 ];
 
@@ -106,8 +106,8 @@ describe('createFleetStore — localStorage mode (no server)', () => {
     store.update(id, 'description', 'a longer free-written note');
     expect(store.getSnapshot()[0].description).toBe('a longer free-written note');
 
-    store.update(id, 'tech', '44a17'); // digits only
-    expect(store.getSnapshot()[0].tech).toBe('4417');
+    store.update(id, 'tech', 'j.z.'); // letters only, upper-cased
+    expect(store.getSnapshot()[0].tech).toBe('JZ');
 
     store.update(id, 'system', 'full');
     expect(store.getSnapshot()[0].system).toBe('full');

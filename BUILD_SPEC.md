@@ -152,7 +152,7 @@ serves the app; **three browser TVs** load `http://<pi-ip>:8080/` as read-only d
   `checkCode` → `setAuthed()`.
 - `Console`: header (`FLEET CONTROL`, `ADMIN CONSOLE · NN AIRFRAMES`), `OPEN DISPLAY`/`LOCK` buttons; table
   grid cols `1.1fr 1.1fr 2fr .9fr .8fr 1.5fr 1.05fr 1.05fr 44px` — workOrder, registration,
-  description(textarea), system(select, `SYSTEM_LABELS`), tech(numeric text), completion
+  description(textarea), system(select, `SYSTEM_LABELS`), tech(text, initials, `maxLength=4`), completion
   (range 0–100 + live %), eta, status(select), × remove; footer `+ ADD AIRFRAME`. Every edit calls the
   store (which persists + broadcasts). Footer note: `CHANGES BROADCAST LIVE TO ALL TV DISPLAYS`.
 - `AdminView`: if `!isAuthed()` → `LockScreen`, else `Console`.
