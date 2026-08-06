@@ -1,9 +1,10 @@
 // Top bar: brand cluster on the left (diamond logo + title + subtitle) and three
 // monospace stat blocks on the right — AIRFRAMES (count), UTC and LOCAL clocks.
-// The clocks tick once a second; LOCAL is fixed UTC-8 "PST" (no DST). See clocks.ts.
+// The clocks tick once a second; LOCAL is real Pacific time and tracks DST, so
+// its label flips PST/PDT. See clocks.ts.
 import { useEffect, useState } from 'preact/hooks';
 import type { JSX } from 'preact';
-import { formatUTC, formatPST } from '../../time/clocks';
+import { formatUTC, formatPacific } from '../../time/clocks';
 import { countPad } from '../../model/derive';
 
 export function Header({ count }: { count: number }): JSX.Element {
@@ -31,7 +32,7 @@ export function Header({ count }: { count: number }): JSX.Element {
         <div style={divider} />
         <Stat label="UTC" value={formatUTC(now)} ls=".06em" />
         <div style={divider} />
-        <Stat label="LOCAL" value={formatPST(now)} ls=".05em" />
+        <Stat label="LOCAL" value={formatPacific(now)} ls=".05em" />
       </div>
     </header>
   );

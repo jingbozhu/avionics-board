@@ -44,6 +44,16 @@
   #vidBig { position: fixed; right: 4vw; bottom: 4vw; width: 60vw; height: 50vh;
             border: 2px solid #24425e; background: #000; display: none; }
   #srcCanvas { display: none; }
+  /* Overscan ruler: nested frames at 0 / 2.5 / 5 % of the viewport, using the
+     same vh/vw inset model as the board's Stage. The OUTERMOST frame you can see
+     complete (all four sides) is what the panel actually shows — feed that
+     number back to the board as ?overscan=N. Longhand insets, not `inset:`,
+     because Silk on Fire OS lags Chromium. */
+  .ruler { position: fixed; pointer-events: none; border: 0.2vw solid; z-index: 99; }
+  .ruler span { position: absolute; top: 0.2vw; left: 0.6vw; font-size: 1.2vw; letter-spacing: .06em; }
+  #r0 { top: 0; right: 0; bottom: 0; left: 0; border-color: #ff6b6b; color: #ff6b6b; }
+  #r25 { top: 2.5vh; right: 2.5vw; bottom: 2.5vh; left: 2.5vw; border-color: #e8c76a; color: #e8c76a; }
+  #r5 { top: 5vh; right: 5vw; bottom: 5vh; left: 5vw; border-color: #38e07b; color: #38e07b; }
 </style>
 </head>
 <body>
@@ -68,6 +78,10 @@
     <div class="col" id="stats"></div>
     <div class="col"><div id="log"></div></div>
   </div>
+
+  <div class="ruler" id="r0"><span>overscan 0 — panel edge</span></div>
+  <div class="ruler" id="r25"><span>2.5%</span></div>
+  <div class="ruler" id="r5"><span>5%</span></div>
 
   <canvas id="srcCanvas" width="320" height="240"></canvas>
   <video id="vidSmall" muted playsinline></video>
@@ -127,6 +141,43 @@
   }
 
   setStat('user agent', navigator.userAgent.replace(/^Mozilla\/5\.0 /, ''));
+
+  // ---- Viewport readout ---------------------------------------------------
+  // The board lays out fluidly at scale 1 and is scaled DOWN only when the
+  // viewport falls under the board's floor. A scale below 1 is NORMAL on a TV
+  // that reports a small viewport — it is what keeps the LOCAL clock on screen
+  // (a viewport under ~1218px used to clip it outright). Only a scale so low the
+  // text stops being readable is a problem.
+  //
+  // COPY of src/layout/stage.ts — keep the constants and the formula in sync.
+  var MIN_BOARD_W = 1280, MIN_BOARD_H = 720;
+  var MAX_BOARD_W = 2560, MAX_BOARD_H = 1440;
+  function boardScale(w, h) {
+    var upper = Math.min(w / MIN_BOARD_W, h / MIN_BOARD_H);
+    var grow = Math.min(w / MAX_BOARD_W, h / MAX_BOARD_H);
+    return Math.min(Math.max(1, grow), upper);
+  }
+  function refreshViewport() {
+    var w = window.innerWidth, h = window.innerHeight;
+    var de = document.documentElement;
+    setStat('viewport', w + ' x ' + h + ' CSS px');
+    setStat('documentElement', de.clientWidth + ' x ' + de.clientHeight);
+    setStat('screen', screen.width + ' x ' + screen.height);
+    setStat('devicePixelRatio', String(window.devicePixelRatio || 1));
+    var s = boardScale(w, h);
+    setStat('board stage scale',
+            s.toFixed(3) + '  (board laid out at ' + Math.round(w / s) + 'x' +
+            Math.round(h / s) + ', scaled by this)',
+            s < 0.6 ? 'bad' : 'good');
+  }
+  refreshViewport();
+  // Logged as an event too, so the numbers survive into localStorage if the TV
+  // kills the page before anyone reads them off the screen.
+  logEvent('viewport ' + window.innerWidth + 'x' + window.innerHeight +
+           ' dpr ' + (window.devicePixelRatio || 1) +
+           ' screen ' + screen.width + 'x' + screen.height);
+  window.addEventListener('resize', refreshViewport);
+
   setStat('wakeLock API', ('wakeLock' in navigator) ? 'SUPPORTED' : 'NOT SUPPORTED',
           ('wakeLock' in navigator) ? 'good' : 'bad');
   setStat('captureStream', (typeof HTMLCanvasElement !== 'undefined' &&

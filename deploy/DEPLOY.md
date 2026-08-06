@@ -32,6 +32,15 @@ kiosk. Read this top to bottom once; the helper scripts automate most of it.
 - A display Pi and the server Pi **can be the same box** (open a local kiosk at
   `http://localhost:8080/`), but for three TVs a dedicated server is cleaner.
 
+> **The wall as actually installed** is three **Hisense Fire TVs running the
+> built-in Amazon Silk browser**, not Raspberry Pi + Chromium clients (see
+> `src/kiosk/keepAwake.ts`). Sections B–D below — `kiosk-launch.sh`, the
+> `avionics-kiosk` user unit, the `xset`/DPMS advice and the nightly reload timer
+> — describe the Pi-client setup and **do not run on those TVs**. On Silk you
+> just navigate to the board URL; the app holds its own screen wake lock
+> (`startKeepAwake()`), which is why that hack exists. Keep the Pi-client path
+> documented: it is still the fallback if a TV's browser is ever unusable.
+
 ## Fully offline
 
 Nothing here phones home at runtime. Fonts are self-hosted (`@fontsource`,
@@ -199,5 +208,25 @@ Display Pis pick up the new build on their next reload (nightly timer, or
   (the launcher uses a dedicated `--user-data-dir`).
 - **Screen still blanks:** you're probably on Wayland — `xset` did nothing; use
   section C "Wayland".
+- **Board edges cut off / the LOCAL clock is clipped:** open
+  `http://<server-ip>:8080/waketest.html` on the affected TV. It prints the
+  reported **viewport**, `devicePixelRatio`, and the **board stage scale**, and
+  draws three ruler frames at 0 / 2.5 / 5 % inset.
+  - The display route is fluid down to a 1280×720 floor and is scaled as one unit
+    below that, so a small reported viewport shrinks the board but never clips it
+    (a scale under 1 there is normal, not a fault). If the clock is still cut off,
+    the TV is **overscanning** — cropping the picture in hardware.
+- **Clock is wrong on one TV:** the board ticks from the *TV's own* clock, not the
+  server's. `LOCAL` is real Pacific time (label flips PST/PDT) and `UTC` does no
+  offset arithmetic at all, so no timezone setting can shift them — only a wrong
+  device clock can. Compare the board's `Z` field against `date -u` on the server
+  Pi; if it differs, set **Settings → Date & Time → Automatic** on that TV.
+  - Note the outermost ruler frame whose four sides are all visible, and load the
+    board with that inset: `http://<server-ip>:8080/?overscan=5` (percent per
+    edge, 0–10). The default is **0** (flush) — the current wall TVs showed the
+    0% frame complete when measured on 2026-08-06, so they do not crop.
+  - Better fix where the set allows it: switch the TV's picture mode to
+    "PC"/"Game", or set Aspect/Zoom to "Just Scan" / "1:1" / "Full Pixel", which
+    disables overscan outright — then run with `?overscan=0`.
 - **Server OOM/killed:** you're likely co-located with other services. Move to a
   dedicated Pi or set `MemoryMax` + add swap.

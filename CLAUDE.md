@@ -72,8 +72,9 @@ npm run test         # vitest run (pure-logic unit tests)
 
 Verification before claiming done: `npm run typecheck` + `npm run build` green,
 and `npm run test` green. Pure logic must have Vitest tests (sun/time golden
-incl. DST-divergence, `u`-wrap, clamp, derive, fit `computeScale`, routing,
-auth, store snapshot/debounce/fallback). No Playwright; manual visual check via
+incl. DST-tracking + both transitions, `u`-wrap, clamp, derive, fit
+`computeScale`, stage `computeBoard` invariants, routing, auth, store
+snapshot/debounce/fallback). No Playwright; manual visual check via
 `npm run dev`.
 
 ## Deployment

@@ -5,7 +5,7 @@
 import { useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { RefObject } from 'preact';
 
-interface Size {
+export interface Size {
   w: number;
   h: number;
 }

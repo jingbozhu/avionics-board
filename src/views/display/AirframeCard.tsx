@@ -129,7 +129,12 @@ const woLine: JSX.CSSProperties = {
 const name: JSX.CSSProperties = {
   fontFamily: 'var(--font-cond)',
   fontWeight: 600,
-  fontSize: 'clamp(16px, 1.15vw, 21px)',
+  // Design value: `clamp(16px, 1.15vw, 21px)`, which pins to its 21px maximum at
+  // the authored 1920 width. Substituted because `vw` resolves against the real
+  // viewport and IGNORES the Stage's transform, so on a 960px TV the clamp
+  // collapsed to its 16px floor and then got scaled again — a hidden second
+  // shrink. 21px is the same size the clamp gives at the design width.
+  fontSize: '21px',
   letterSpacing: '.04em',
   color: 'var(--text-primary)',
   lineHeight: 1.05,
@@ -149,7 +154,9 @@ const pctRow: JSX.CSSProperties = { display: 'flex', alignItems: 'baseline', gap
 const pctBig: JSX.CSSProperties = {
   fontFamily: 'var(--font-cond)',
   fontWeight: 700,
-  fontSize: 'clamp(28px, 2.4vw, 38px)',
+  // Design value: `clamp(28px, 2.4vw, 38px)` — pinned to 38px at the authored
+  // 1920 width. Substituted for the same reason as `name` above.
+  fontSize: '38px',
   color: 'var(--accent)',
   lineHeight: 1,
   textShadow: '0 0 22px var(--accent)',

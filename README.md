@@ -89,9 +89,11 @@ and copy `dist/` + `server/` to the Pi).
 
 ## What's deliberately quirky (preserve these)
 
-- **LOCAL clock is fixed UTC−8 labeled `PST`, with DST disabled on purpose**
-  (`new Date(now − 8h)` read as UTC fields; never `Intl`/`America/Los_Angeles`).
-  The UTC clock and the globe's sun use real UTC and are geographically correct.
+- **The LOCAL clock tracks real Pacific time including DST** — the label flips
+  `PST`/`PDT`. This *reverses* a prototype quirk (a fixed UTC−8 always labeled
+  `PST`) that the docs used to mandate preserving: it read an hour behind for
+  ~8 months a year, so it was fixed on 2026-08-06. Don't restore it. The UTC
+  clock and the globe's sun use real UTC and are geographically correct.
 - **The globe is a CPU canvas renderer (no WebGL) by deliberate choice** for the
   Pi 5: a fixed 760×760 buffer, one reused `ImageData`, throttled to ~20 fps,
   paused when the tab is hidden. Magic constants (globe weights, `earthPeriod=300`,
@@ -101,6 +103,14 @@ and copy `dist/` + `server/` to the Pi).
   the atmosphere ring now alpha-fades to transparent — constant chroma
   `(40,94,182)`, alpha `255·t²` — instead of RGB-fading to opaque black, so the
   glow merges into any page background.)
+- **Minimum-board stage** lays the display route out fluidly at scale 1 and
+  shrinks it as one unit only when the viewport drops below a 1280×720 floor, so
+  the board never reflows for a small screen and never clips — a 960-px-wide Fire
+  TV gets a uniform 0.75, a 1080p monitor gets no transform at all, and a 4K wall
+  scales up past 2560×1440. The board sits flush by default (the wall's TVs were
+  measured and don't crop); add `?overscan=N` (percent per edge, 0–10) for a TV
+  that does. `/waketest.html` reports the viewport and draws ruler frames so you
+  can read the right value off the panel.
 - **Fit-to-height** scales the 3×2 card grid so all six cards always fit with no
   scrollbar, recomputing on resize, airframe-count change, and `document.fonts.ready`.
 
@@ -113,7 +123,7 @@ Full design values live in [`docs/DESIGN_BRIEF.md`](docs/DESIGN_BRIEF.md),
   6-item seed if absent). The browser store reads `GET /api/fleet`, subscribes to
   `GET /api/stream` (SSE) for live updates, and pushes edits with `PUT /api/fleet`.
 - If the server is unreachable, the client falls back to
-  `localStorage['fleet.projects.v2']` and syncs across tabs via the `storage`
+  `localStorage['fleet.projects.v3']` and syncs across tabs via the `storage`
   event — single-machine mode.
 
 ## Project layout
