@@ -5,14 +5,24 @@
 import type { JSX } from 'preact';
 import { fleetStore, useFleet } from '../../model/useFleet';
 import { goto } from '../../routing';
-import { SYSTEMS, FLAGS } from '../../model/airframe';
+import { SYSTEMS, SYSTEM_LABELS, FLAGS } from '../../model/airframe';
 import { STATUS } from '../../theme/tokens';
 import { countPad } from '../../model/derive';
 import type { Airframe } from '../../types';
 
-// Column track sizes verbatim from the brief: name / category / system / completion / eta / status / remove.
-const COLS = '1.7fr 1.5fr 1.1fr 1.9fr 1.1fr 1.1fr 44px';
-const HEAD = ['AIRFRAME / PROJECT', 'CATEGORY', 'SYSTEM', 'COMPLETION', 'ETA', 'STATUS', ''];
+// Column tracks — must stay in lockstep with the control order in Row() below.
+const COLS = '1.1fr 1.1fr 2fr .9fr .8fr 1.5fr 1.05fr 1.05fr 44px';
+const HEAD = [
+  'WORK ORDER',
+  'REGISTRATION',
+  'PROJECT DESCRIPTION',
+  'SYSTEM',
+  'TECH',
+  'COMPLETION',
+  'ETA',
+  'STATUS',
+  '',
+];
 
 /** `onLock` re-locks the console (clear auth + show the lock screen) without leaving #admin. */
 export function Console({ onLock }: { onLock: () => void }): JSX.Element {
@@ -62,21 +72,43 @@ export function Console({ onLock }: { onLock: () => void }): JSX.Element {
 
 /** One editable airframe row. Each control commits immediately to the store. */
 function Row({ a }: { a: Airframe }): JSX.Element {
-  const set = (field: keyof Airframe) => (e: JSX.TargetedEvent<HTMLInputElement | HTMLSelectElement>) =>
-    fleetStore.update(a.id, field, e.currentTarget.value);
+  const set =
+    (field: keyof Airframe) =>
+    (e: JSX.TargetedEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+      fleetStore.update(a.id, field, e.currentTarget.value);
 
   return (
     <div style={row}>
-      <input style={field} value={a.name} onInput={set('name')} aria-label="Name" />
-      <input style={field} value={a.category} onInput={set('category')} aria-label="Category" />
+      <input style={field} value={a.workOrder} onInput={set('workOrder')} aria-label="Work order" />
+      <input
+        style={field}
+        value={a.registration}
+        onInput={set('registration')}
+        aria-label="Registration"
+      />
+      <textarea
+        style={{ ...field, ...descField }}
+        rows={2}
+        value={a.description}
+        onInput={set('description')}
+        aria-label="Project description"
+      />
 
       <select style={field} value={a.system} onChange={set('system')} aria-label="System">
         {SYSTEMS.map((s) => (
           <option key={s} value={s}>
-            {s.toUpperCase()}
+            {SYSTEM_LABELS[s]}
           </option>
         ))}
       </select>
+
+      <input
+        style={field}
+        value={a.tech}
+        onInput={set('tech')}
+        inputMode="numeric"
+        aria-label="Tech"
+      />
 
       <div style={completion}>
         <input
@@ -126,7 +158,7 @@ const page: JSX.CSSProperties = {
 };
 
 const inner: JSX.CSSProperties = {
-  maxWidth: '1180px',
+  maxWidth: '1420px',
   margin: '0 auto',
 };
 
@@ -217,6 +249,13 @@ const field: JSX.CSSProperties = {
   fontFamily: 'var(--font-mono)',
   fontSize: '13px',
   outline: 'none',
+};
+
+// The description is a free-writing zone — let it wrap and grow instead of scrolling sideways.
+const descField: JSX.CSSProperties = {
+  resize: 'vertical',
+  lineHeight: 1.4,
+  fontSize: '12px',
 };
 
 const completion: JSX.CSSProperties = {

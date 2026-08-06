@@ -1,7 +1,9 @@
 // One airframe card: accent bar, the helicopter art with the "upgraded system"
-// lit in the accent colour (heli-fill clipped over the dimmed heli-line), name,
-// category pill, big completion %, animated progress bar, and a footer with the
-// date and a pulsing status chip. All values come from the CardVM (see derive.ts).
+// lit in the accent colour (heli-fill clipped over the dimmed heli-line) — the
+// whole airframe for a full-aircraft project — work order, registration, project
+// description, big completion %, animated progress bar, and a footer with the
+// date over the tech number, plus a pulsing status chip. All values come from
+// the CardVM (see derive.ts).
 import type { JSX } from 'preact';
 import type { CardVM } from '../../types';
 
@@ -18,13 +20,16 @@ export function AirframeCard({ vm }: { vm: CardVM }): JSX.Element {
         <div style={heliWrap}>
           <img src={HELI_LINE} alt="" style={heliLine} />
           <div style={{ ...heliClip, clipPath: vm.clip, WebkitClipPath: vm.clip }}>
-            <img src={HELI_FILL} alt="" style={heliFill} />
+            <img src={HELI_FILL} alt="" style={{ ...heliFill, filter: vm.heliFilter }} />
           </div>
         </div>
 
         <div style={info}>
-          <div style={name}>{vm.name}</div>
-          <div style={pill}>{vm.category}</div>
+          <div style={headBlock}>
+            <div style={woLine}>{vm.workOrder}</div>
+            <div style={name}>{vm.registration}</div>
+          </div>
+          <div style={desc}>{vm.description}</div>
           <div style={pctRow}>
             <span style={pctBig}>{vm.pctLabel}</span>
             <span style={completeLabel}>Complete</span>
@@ -36,14 +41,17 @@ export function AirframeCard({ vm }: { vm: CardVM }): JSX.Element {
       </div>
 
       <div style={footer}>
-        <span style={dateCell}>
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="var(--text-muted)" strokeWidth="1.3">
-            <rect x="2" y="3.5" width="12" height="11" rx="1.6" />
-            <line x1="2" y1="6.5" x2="14" y2="6.5" />
-            <line x1="5.5" y1="1.5" x2="5.5" y2="4.5" />
-            <line x1="10.5" y1="1.5" x2="10.5" y2="4.5" />
-          </svg>
-          {vm.dateLabel}
+        <span style={dateBlock}>
+          <span style={dateCell}>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="var(--text-muted)" strokeWidth="1.3">
+              <rect x="2" y="3.5" width="12" height="11" rx="1.6" />
+              <line x1="2" y1="6.5" x2="14" y2="6.5" />
+              <line x1="5.5" y1="1.5" x2="5.5" y2="4.5" />
+              <line x1="10.5" y1="1.5" x2="10.5" y2="4.5" />
+            </svg>
+            {vm.dateLabel}
+          </span>
+          {vm.techLabel ? <span style={techLine}>{vm.techLabel}</span> : null}
         </span>
         <span style={{ ...statusCell, color: vm.statusColor }}>
           <span
@@ -95,13 +103,13 @@ const heliLine: JSX.CSSProperties = {
   opacity: 0.5,
 };
 const heliClip: JSX.CSSProperties = { position: 'absolute', inset: 0 };
+// `filter` is supplied per-card from vm.heliFilter (the global accent tint).
 const heliFill: JSX.CSSProperties = {
   position: 'absolute',
   inset: 0,
   width: '100%',
   height: '100%',
   objectFit: 'contain',
-  filter: 'saturate(1.05) var(--heli-filter, )',
 };
 
 const info: JSX.CSSProperties = {
@@ -111,6 +119,13 @@ const info: JSX.CSSProperties = {
   flexDirection: 'column',
   gap: '9px',
 };
+const headBlock: JSX.CSSProperties = { display: 'flex', flexDirection: 'column', gap: '3px' };
+const woLine: JSX.CSSProperties = {
+  fontFamily: 'var(--font-mono)',
+  fontSize: '10.5px',
+  letterSpacing: '.16em',
+  color: 'var(--text-muted)',
+};
 const name: JSX.CSSProperties = {
   fontFamily: 'var(--font-cond)',
   fontWeight: 600,
@@ -119,16 +134,16 @@ const name: JSX.CSSProperties = {
   color: 'var(--text-primary)',
   lineHeight: 1.05,
 };
-const pill: JSX.CSSProperties = {
-  alignSelf: 'flex-start',
-  padding: '5px 11px',
-  borderRadius: '6px',
-  background: 'var(--pill-bg)',
-  border: '1px solid var(--pill-border)',
-  fontFamily: 'var(--font-mono)',
-  fontSize: '10.5px',
-  letterSpacing: '.14em',
-  color: 'var(--pill-text)',
+// Free-prose project description, clamped to 3 lines so the card height stays fixed.
+const desc: JSX.CSSProperties = {
+  display: '-webkit-box',
+  WebkitBoxOrient: 'vertical',
+  WebkitLineClamp: '3', // string: a number would risk Preact appending "px"
+  overflow: 'hidden',
+  fontFamily: 'var(--font-body)',
+  fontSize: '12.5px',
+  lineHeight: 1.45,
+  color: 'var(--text-secondary)',
 };
 const pctRow: JSX.CSSProperties = { display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '2px' };
 const pctBig: JSX.CSSProperties = {
@@ -174,11 +189,26 @@ const footer: JSX.CSSProperties = {
   fontSize: '12px',
   letterSpacing: '.04em',
 };
+// The date sits on its own line with the tech number stacked beneath it.
+const dateBlock: JSX.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '4px',
+  minWidth: 0,
+};
 const dateCell: JSX.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: '8px',
   color: 'var(--text-secondary)',
+};
+// Same treatment as the work-order line up top; the 22px indent (14px calendar
+// icon + the 8px dateCell gap) aligns it under the date text, not the icon.
+const techLine: JSX.CSSProperties = {
+  paddingLeft: '22px',
+  fontSize: '10.5px',
+  letterSpacing: '.16em',
+  color: 'var(--text-muted)',
 };
 const statusCell: JSX.CSSProperties = { display: 'flex', alignItems: 'center', gap: '8px' };
 const statusDot: JSX.CSSProperties = {

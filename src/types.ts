@@ -1,14 +1,20 @@
 // Shared contracts — locked in Phase A so logic/globe/view threads build against stable seams.
 
-export type SystemKey = 'cockpit' | 'comms' | 'mission' | 'nav' | 'autopilot' | 'radar';
+/**
+ * Which part of the airframe the card highlights. '1'..'6' are the six hand-tuned
+ * heli-art regions; 'full' lights the WHOLE aircraft (whole-aircraft project).
+ */
+export type SystemKey = '1' | '2' | '3' | '4' | '5' | '6' | 'full';
 export type StatusFlag = 'on-track' | 'at-risk' | 'complete';
 export type AccentKey = 'amber' | 'orange' | 'gold';
 
 export interface Airframe {
   id: string;
-  name: string;
-  category: string;
+  workOrder: string;
+  registration: string;
+  description: string; // free prose (later AI-generated)
   system: SystemKey;
+  tech: string; // employee number; digits only, string so leading zeros survive
   pct: number; // 0..100
   eta: string;
   flag: StatusFlag;
@@ -58,12 +64,15 @@ export interface StatusView {
 /** Per-card view-model derived from an Airframe (pure; see model/derive.ts). */
 export interface CardVM {
   id: string;
-  name: string;
-  category: string;
+  workOrder: string;
+  registration: string;
+  description: string;
+  techLabel: string; // "TECH 4417", or "" when unassigned
   pct: number;
   pctLabel: string; // "82%"
   barPct: string; // "82%"
   clip: string; // clip-path inset() for the heli-fill highlight
+  heliFilter: string; // CSS filter for the heli-fill layer (the global accent tint)
   statusLabel: string;
   statusColor: string;
   dateLabel: string; // "ETA: …" or "Completed: …"

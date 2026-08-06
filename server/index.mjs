@@ -31,17 +31,20 @@ const HEARTBEAT_MS = 25000;
 const MAX_BODY = 1_000_000; // 1 MB cap on PUT bodies
 
 // --- domain rules (mirrors src/model/airframe.ts; inlined, zero deps) ---------
-const SYSTEMS = ['cockpit', 'comms', 'mission', 'nav', 'autopilot', 'radar'];
+const SYSTEMS = ['1', '2', '3', '4', '5', '6', 'full'];
 const FLAGS = ['on-track', 'at-risk', 'complete'];
+
+// Pre-rename system names, so existing stored records survive. Drop once the DB lands.
+const LEGACY_SYSTEM = { cockpit: '1', comms: '2', mission: '3', nav: '4', autopilot: '5', radar: '6' };
 
 function seed() {
   return [
-    { id: 'p1', name: 'BELL 412 COMMS', category: 'COMMUNICATIONS UPGRADE', system: 'comms', pct: 82, eta: 'May 20, 2025', flag: 'on-track' },
-    { id: 'p2', name: 'EC135 GLASS COCKPIT', category: 'COCKPIT MODERNIZATION', system: 'cockpit', pct: 47, eta: 'Jun 10, 2025', flag: 'on-track' },
-    { id: 'p3', name: 'AW139 SAR SUITE', category: 'MISSION SYSTEMS', system: 'mission', pct: 95, eta: 'May 16, 2025', flag: 'at-risk' },
-    { id: 'p4', name: 'H145 NAV UPGRADE', category: 'NAVIGATION UPGRADE', system: 'nav', pct: 24, eta: 'Jun 30, 2025', flag: 'on-track' },
-    { id: 'p5', name: 'BELL 429 AUTOPILOT', category: 'AUTOPILOT SYSTEM', system: 'autopilot', pct: 64, eta: 'May 28, 2025', flag: 'on-track' },
-    { id: 'p6', name: 'S-76 WX RADAR', category: 'WEATHER RADAR', system: 'radar', pct: 100, eta: 'May 1, 2025', flag: 'complete' },
+    { id: 'p1', workOrder: 'WO-4471', registration: 'N412HL', description: 'Replace VHF-1 transceiver and re-terminate the overhead comms harness; bench-test COM2 before reinstall.', system: '2', tech: '4417', pct: 82, eta: 'May 20, 2025', flag: 'on-track' },
+    { id: 'p2', workOrder: 'WO-4482', registration: 'N135EC', description: 'Glass cockpit modernization — swap the round-dial panel for dual PFD/MFD units and update the pitot-static plumbing.', system: '1', tech: '2093', pct: 47, eta: 'Jun 10, 2025', flag: 'on-track' },
+    { id: 'p3', workOrder: 'WO-4490', registration: 'N139SR', description: 'Full SAR conversion: mission console, hoist provisions, searchlight, FLIR turret and complete cabin rewire.', system: 'full', tech: '7741', pct: 95, eta: 'May 16, 2025', flag: 'at-risk' },
+    { id: 'p4', workOrder: 'WO-4503', registration: 'N145AM', description: 'Navigation upgrade — new GPS/WAAS receiver and antenna, with a database subscription cutover.', system: '4', tech: '3160', pct: 24, eta: 'Jun 30, 2025', flag: 'on-track' },
+    { id: 'p5', workOrder: 'WO-4511', registration: 'N429BT', description: 'Four-axis autopilot install; rig the servos and fly the acceptance profile once the AFCS is signed off.', system: '5', tech: '5528', pct: 64, eta: 'May 28, 2025', flag: 'on-track' },
+    { id: 'p6', workOrder: 'WO-4519', registration: 'N76WX', description: 'Nose-mounted weather radar retrofit, radome refinish and antenna alignment. Closed out and returned to service.', system: '6', tech: '8802', pct: 100, eta: 'May 1, 2025', flag: 'complete' },
   ];
 }
 
@@ -51,15 +54,22 @@ function clampPct(n) {
   return v < 0 ? 0 : v > 100 ? 100 : v;
 }
 
+// `name` / `category` are the pre-split field names, mapped forward so a fleet
+// stored before the reshape still loads.
 function normalizeAirframe(p, idx) {
-  const system = SYSTEMS.includes(p.system) ? p.system : 'comms';
+  const raw = p.system == null ? '' : String(p.system);
+  const system = SYSTEMS.includes(raw) ? raw : LEGACY_SYSTEM[raw] || '2';
   const flag = FLAGS.includes(p.flag) ? p.flag : 'on-track';
   const id = typeof p.id === 'string' && p.id ? p.id : `af-${Date.now().toString(36)}-${idx}`;
+  const registration = p.registration == null ? p.name : p.registration;
+  const description = p.description == null ? p.category : p.description;
   return {
     id,
-    name: p.name == null ? '—' : String(p.name),
-    category: p.category == null ? 'AVIONICS UPGRADE' : String(p.category),
+    workOrder: p.workOrder == null ? '' : String(p.workOrder),
+    registration: registration == null ? '—' : String(registration),
+    description: description == null ? '' : String(description),
     system,
+    tech: p.tech == null ? '' : String(p.tech).replace(/\D/g, ''),
     pct: clampPct(p.pct == null ? 0 : p.pct),
     eta: p.eta == null ? 'TBD' : String(p.eta),
     flag,

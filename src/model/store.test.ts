@@ -29,8 +29,8 @@ class MockEventSource {
 }
 
 const SERVER_LIST: Airframe[] = [
-  { id: 's1', name: 'SERVER ONE', category: 'X', system: 'nav', pct: 10, eta: 'a', flag: 'on-track' },
-  { id: 's2', name: 'SERVER TWO', category: 'Y', system: 'radar', pct: 100, eta: 'b', flag: 'complete' },
+  { id: 's1', workOrder: 'WO-1', registration: 'SERVER ONE', description: 'X', system: '4', tech: '11', pct: 10, eta: 'a', flag: 'on-track' },
+  { id: 's2', workOrder: 'WO-2', registration: 'SERVER TWO', description: 'Y', system: '6', tech: '', pct: 100, eta: 'b', flag: 'complete' },
 ];
 
 function okFetch(list: unknown) {
@@ -97,8 +97,20 @@ describe('createFleetStore — localStorage mode (no server)', () => {
     store.update(id, 'pct', 150); // clamps
     expect(store.getSnapshot()[0].pct).toBe(100);
 
-    store.update(id, 'name', 'RENAMED');
-    expect(store.getSnapshot()[0].name).toBe('RENAMED');
+    store.update(id, 'registration', 'RENAMED');
+    expect(store.getSnapshot()[0].registration).toBe('RENAMED');
+
+    store.update(id, 'workOrder', 'WO-9');
+    expect(store.getSnapshot()[0].workOrder).toBe('WO-9');
+
+    store.update(id, 'description', 'a longer free-written note');
+    expect(store.getSnapshot()[0].description).toBe('a longer free-written note');
+
+    store.update(id, 'tech', '44a17'); // digits only
+    expect(store.getSnapshot()[0].tech).toBe('4417');
+
+    store.update(id, 'system', 'full');
+    expect(store.getSnapshot()[0].system).toBe('full');
 
     const len = store.getSnapshot().length;
     store.remove(id);
@@ -174,7 +186,7 @@ describe('createFleetStore — LAN mode (server reachable)', () => {
     const before = store.getSnapshot();
 
     const pushed: Airframe[] = [
-      { id: 'z1', name: 'PUSHED', category: 'C', system: 'comms', pct: 5, eta: 'x', flag: 'at-risk' },
+      { id: 'z1', workOrder: 'WO-Z', registration: 'PUSHED', description: 'C', system: '2', tech: '', pct: 5, eta: 'x', flag: 'at-risk' },
     ];
     MockEventSource.instances[0].emit(pushed);
 

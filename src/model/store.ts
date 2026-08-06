@@ -19,6 +19,7 @@ import {
   SYSTEMS,
   FLAGS,
   clampPct,
+  normalizeTech,
   normalizeAirframe,
   seed,
   blankAirframe,
@@ -83,10 +84,14 @@ function applyField(a: Airframe, field: keyof Airframe, value: string | number):
       const f = String(value);
       return { ...a, flag: (FLAGS as string[]).includes(f) ? (f as StatusFlag) : a.flag };
     }
-    case 'name':
-      return { ...a, name: String(value) };
-    case 'category':
-      return { ...a, category: String(value) };
+    case 'tech':
+      return { ...a, tech: normalizeTech(value) };
+    case 'workOrder':
+      return { ...a, workOrder: String(value) };
+    case 'registration':
+      return { ...a, registration: String(value) };
+    case 'description':
+      return { ...a, description: String(value) };
     case 'eta':
       return { ...a, eta: String(value) };
     case 'id':

@@ -21,8 +21,8 @@ export function Header({ count }: { count: number }): JSX.Element {
           <div style={logoInner} />
         </div>
         <div>
-          <div style={title}>GLOBAL AVIONICS OPERATIONS BOARD</div>
-          <div style={subtitle}>Professional Avionics Fleet Task Management</div>
+          <div style={title}>IAS ARTIFICIAL INTELLIGENCE PLATFORM</div>
+          <div style={subtitle}>Avionics Operation Horizon</div>
         </div>
       </div>
 
