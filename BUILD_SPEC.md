@@ -43,7 +43,8 @@ serves the app; **three browser TVs** load `http://<pi-ip>:8080/` as read-only d
   `src/auth.ts`(+`.test.ts`)
 - **D display** → `src/app/App.tsx`, `src/views/display/DisplayView.tsx`, `Header.tsx`, `CardGrid.tsx`,
   `AirframeCard.tsx`, `EmptyState.tsx`
-- **E admin** → `src/views/admin/AdminView.tsx`, `LockScreen.tsx`, `Console.tsx`
+- **E admin** → `src/views/admin/AdminView.tsx`, `LockScreen.tsx`, `Console.tsx`, `TicketPanel.tsx`,
+  `tickets.ts`(+`.test.ts`)
 - **F2 server+deploy** → `server/index.mjs`, `deploy/*`, `README.md`, `CLAUDE.md`
 
 ## Module contracts
@@ -155,6 +156,9 @@ serves the app; **three browser TVs** load `http://<pi-ip>:8080/` as read-only d
   description(textarea), system(select, `SYSTEM_LABELS`), tech(text, initials, `maxLength=4`), completion
   (range 0–100 + live %), eta, status(select), × remove; footer `+ ADD AIRFRAME`. Every edit calls the
   store (which persists + broadcasts). Footer note: `CHANGES BROADCAST LIVE TO ALL TV DISPLAYS`.
+- `TicketPanel` (below the fleet table): file a bug/feature ticket about the board + list/close open
+  tickets via `GET/POST /api/tickets` (`tickets.ts`). Fails visibly when the server is unreachable;
+  the form keeps its text. No FleetStore involvement, no SSE.
 - `AdminView`: if `!isAuthed()` → `LockScreen`, else `Console`.
 
 ### F2 — LAN server + deploy
@@ -164,6 +168,8 @@ serves the app; **three browser TVs** load `http://<pi-ip>:8080/` as read-only d
   - `PUT /api/fleet` → body = full array; validate/clamp; write file; broadcast to SSE clients.
   - `GET /api/stream` → `text/event-stream`; send current state on connect, push on each update;
     clean up on close; heartbeat comment every ~25s.
+  - `GET/POST /api/tickets` → admin bug/feature tickets (`{action:'create'|'close'}` bodies), persisted
+    to `server/tickets.json`, newest first, capped at 200. Never broadcast on `/api/stream`.
   - Correct MIME types; SPA fallback to `index.html`; `PORT` env (default 8080); bind `0.0.0.0` (LAN).
 - `deploy/`: `avionics-board.service` (systemd, `Restart=always`, runs `npm run serve`), an
   install/launch script, a Chromium-kiosk unit/notes for the display Pis, DPMS/screen-blank-off notes,

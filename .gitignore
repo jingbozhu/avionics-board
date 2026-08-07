@@ -4,5 +4,6 @@ dist
 .DS_Store
 # runtime server state (the live fleet list lives on the Pi, not in git)
 server/fleet-data.json
+server/tickets.json
 # large source textures are kept out of the committed runtime bundle
 assets-src/

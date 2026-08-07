@@ -8,6 +8,7 @@ import { goto } from '../../routing';
 import { SYSTEMS, SYSTEM_LABELS, FLAGS } from '../../model/airframe';
 import { STATUS } from '../../theme/tokens';
 import { countPad } from '../../model/derive';
+import { TicketPanel } from './TicketPanel';
 import type { Airframe } from '../../types';
 
 // Column tracks — must stay in lockstep with the control order in Row() below.
@@ -63,6 +64,8 @@ export function Console({ onLock }: { onLock: () => void }): JSX.Element {
             + ADD AIRFRAME
           </button>
         </div>
+
+        <TicketPanel />
 
         <div style={note}>CHANGES BROADCAST LIVE TO ALL TV DISPLAYS</div>
       </div>

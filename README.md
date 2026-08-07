@@ -125,6 +125,10 @@ Full design values live in [`docs/DESIGN_BRIEF.md`](docs/DESIGN_BRIEF.md),
 - If the server is unreachable, the client falls back to
   `localStorage['fleet.projects.v3']` and syncs across tabs via the `storage`
   event — single-machine mode.
+- Board tickets (bug reports / feature requests filed from the admin console)
+  live at `GET/POST /api/tickets`, persisted to `server/tickets.json`. They have
+  no localStorage fallback on purpose: a failed submit is shown to the user and
+  the form keeps its text.
 
 ## Project layout
 

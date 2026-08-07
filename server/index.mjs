@@ -10,11 +10,15 @@
 //        PUT  /api/fleet   -> replace the array (validated/clamped), persist, broadcast
 //        GET  /api/stream  -> text/event-stream: snapshot on connect, push on change,
 //                             ~25s heartbeat comment, cleanup on close
+//        GET  /api/tickets -> admin bug/feature tickets, newest first
+//        POST /api/tickets -> {action:'create'|'close', ...}: mutate, persist, return list
 //
 // State persists to server/fleet-data.json (gitignored). When that file is
 // missing it is initialized from the inline 6-item seed below (identical to
 // src/model/airframe.ts seed() so LAN mode and the localStorage fallback render
-// the same content).
+// the same content). Tickets persist to server/tickets.json (also gitignored)
+// and deliberately never ride /api/stream — the TVs coerce every stream message
+// into the fleet list, and the displays never show tickets anyway.
 import { createServer } from 'node:http';
 import { readFile, readFileSync, writeFileSync, existsSync } from 'node:fs';
 
@@ -24,6 +28,7 @@ const HERE = import.meta.dirname; // .../avionics-board/server
 const ROOT = HERE.slice(0, Math.max(HERE.lastIndexOf('/'), HERE.lastIndexOf('\\'))); // .../avionics-board
 const DIST = ROOT + '/dist';
 const DATA_FILE = HERE + '/fleet-data.json';
+const TICKETS_FILE = HERE + '/tickets.json';
 
 const PORT = Number(process.env.PORT) || 8080;
 const HOST = '0.0.0.0'; // bind all interfaces so the LAN TVs can reach it
@@ -33,6 +38,13 @@ const MAX_BODY = 1_000_000; // 1 MB cap on PUT bodies
 // --- domain rules (mirrors src/model/airframe.ts; inlined, zero deps) ---------
 const SYSTEMS = ['1', '2', '3', '4', '5', '6', 'full'];
 const FLAGS = ['on-track', 'at-risk', 'complete'];
+
+// Tickets (admin bug/feature reports). The server is the single authority for
+// ids, timestamps, status and caps — the client sends only kind/title/detail.
+const TICKET_KINDS = ['bug', 'feature'];
+const MAX_TICKETS = 200; // prepend-and-slice cap; bounds the file on a 24/7 kiosk
+const TICKET_TITLE_MAX = 120;
+const TICKET_DETAIL_MAX = 2000;
 
 // Pre-rename system names, so existing stored records survive. Drop once the DB lands.
 const LEGACY_SYSTEM = { cockpit: '1', comms: '2', mission: '3', nav: '4', autopilot: '5', radar: '6' };
@@ -92,6 +104,31 @@ function validateList(value) {
   return out;
 }
 
+// Coerce-don't-reject, same posture as normalizeAirframe. Also the single
+// builder for NEW tickets (handleTicketsPost passes only kind/title/detail, so
+// id/status/createdAt fall through to their server-assigned defaults).
+function normalizeTicket(p, idx) {
+  return {
+    id: typeof p.id === 'string' && p.id ? p.id : `tk-${Date.now().toString(36)}-${idx}`,
+    kind: TICKET_KINDS.includes(p.kind) ? p.kind : 'bug',
+    title: p.title == null ? '' : String(p.title).trim().slice(0, TICKET_TITLE_MAX),
+    detail: p.detail == null ? '' : String(p.detail).trim().slice(0, TICKET_DETAIL_MAX),
+    status: p.status === 'done' ? 'done' : 'open',
+    createdAt:
+      typeof p.createdAt === 'string' && p.createdAt ? p.createdAt : new Date().toISOString(),
+  };
+}
+
+function validateTicketList(value) {
+  if (!Array.isArray(value)) return null;
+  const out = [];
+  for (let i = 0; i < value.length; i++) {
+    const item = value[i];
+    if (item && typeof item === 'object') out.push(normalizeTicket(item, i));
+  }
+  return out;
+}
+
 // --- in-memory state + persistence -------------------------------------------
 let fleet = loadFleet();
 
@@ -115,6 +152,35 @@ function persist(list) {
     writeFileSync(DATA_FILE, JSON.stringify(list, null, 2) + '\n');
   } catch (err) {
     console.error('[avionics] failed to persist fleet:', err.message);
+  }
+}
+
+let tickets = loadTickets();
+let ticketSeq = 0; // per-boot suffix for new ticket ids
+
+function loadTickets() {
+  if (existsSync(TICKETS_FILE)) {
+    try {
+      const list = validateTicketList(JSON.parse(readFileSync(TICKETS_FILE, 'utf8')));
+      if (list) return list;
+      console.error('[avionics] tickets.json is not an array; serving none');
+    } catch (err) {
+      console.error('[avionics] tickets.json unreadable, serving none:', err.message);
+    }
+    // Unlike the fleet (reseeded above), a corrupt file is NOT overwritten:
+    // ticket prose exists nowhere else, so leave the bytes on disk for manual
+    // recovery. The file heals on the next successful create/close.
+    return [];
+  }
+  persistTickets([]); // materialize the empty list on first run so the file exists
+  return [];
+}
+
+function persistTickets(list) {
+  try {
+    writeFileSync(TICKETS_FILE, JSON.stringify(list, null, 2) + '\n');
+  } catch (err) {
+    console.error('[avionics] failed to persist tickets:', err.message);
   }
 }
 
@@ -290,6 +356,55 @@ function handlePut(req, res) {
     });
 }
 
+// Ticket mutations. One path, action-discriminated body:
+//   {action:'create', kind, title, detail}  -> prepend a new ticket (title required)
+//   {action:'close', id}                    -> flip status to 'done'; idempotent, so
+//                                              two admins racing both get a clean 200
+// Both answer with the full updated list — the client re-renders straight from
+// the response, no follow-up GET. No broadcast(): tickets stay off /api/stream.
+function handleTicketsPost(req, res) {
+  readBody(req)
+    .then((text) => {
+      let parsed;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        sendJson(res, 400, { error: 'invalid JSON' }, req.method);
+        return;
+      }
+      if (parsed == null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        sendJson(res, 400, { error: 'expected a JSON object' }, req.method);
+        return;
+      }
+      if (parsed.action === 'create') {
+        const t = normalizeTicket(
+          { kind: parsed.kind, title: parsed.title, detail: parsed.detail },
+          ++ticketSeq,
+        );
+        if (!t.title) {
+          sendJson(res, 400, { error: 'title required' }, req.method);
+          return;
+        }
+        tickets = [t, ...tickets].slice(0, MAX_TICKETS);
+        persistTickets(tickets);
+        sendJson(res, 200, tickets, req.method);
+        return;
+      }
+      if (parsed.action === 'close') {
+        const id = typeof parsed.id === 'string' ? parsed.id : '';
+        tickets = tickets.map((t) => (t.id === id ? { ...t, status: 'done' } : t));
+        persistTickets(tickets);
+        sendJson(res, 200, tickets, req.method);
+        return;
+      }
+      sendJson(res, 400, { error: 'unknown action' }, req.method);
+    })
+    .catch((err) => {
+      const tooLarge = err && err.code === 'TOO_LARGE';
+      sendJson(res, tooLarge ? 413 : 400, { error: tooLarge ? 'payload too large' : 'bad request' }, req.method);
+    });
+}
+
 function handleStream(req, res) {
   res.writeHead(200, {
     'Content-Type': 'text/event-stream; charset=utf-8',
@@ -344,6 +459,20 @@ const server = createServer((req, res) => {
     return;
   }
 
+  if (pathname === '/api/tickets') {
+    if (method === 'GET' || method === 'HEAD') {
+      sendJson(res, 200, tickets, method);
+      return;
+    }
+    if (method === 'POST') {
+      handleTicketsPost(req, res);
+      return;
+    }
+    res.setHeader('Allow', 'GET, POST');
+    send(res, 405, 'text/plain; charset=utf-8', 'Method Not Allowed\n', method);
+    return;
+  }
+
   if (pathname.startsWith('/api/')) {
     sendJson(res, 404, { error: 'not found' }, method);
     return;
@@ -360,6 +489,7 @@ const server = createServer((req, res) => {
 server.listen(PORT, HOST, () => {
   console.log(`[avionics] serving on http://${HOST}:${PORT}  (dist: ${DIST})`);
   console.log(`[avionics] fleet state: ${DATA_FILE} (${fleet.length} airframes)`);
+  console.log(`[avionics] tickets: ${TICKETS_FILE} (${tickets.length})`);
 });
 
 // --- graceful shutdown -------------------------------------------------------

@@ -54,7 +54,7 @@ MemoryMax=200M
 MemoryHigh=150M
 
 # --- Light hardening. The service only needs to read the project tree and
-# write server/fleet-data.json inside WorkingDirectory.
+# write server/fleet-data.json + server/tickets.json inside WorkingDirectory.
 NoNewPrivileges=true
 ProtectSystem=full
 PrivateTmp=true
