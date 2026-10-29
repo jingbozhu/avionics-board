@@ -68,7 +68,14 @@ npm run serve        # node server/index.mjs — the LAN server, :8080
 npm run build        # production build → dist/
 npm run typecheck    # tsc --noEmit
 npm run test         # vitest run (pure-logic unit tests)
+npm run test:server  # node --test for server/*.test.mjs (manuals search API)
 ```
+
+Manual search (`#manuals`): `tools/index_manuals.py` (PyMuPDF) builds
+`manuals/manuals.db` offline; `server/manuals.mjs` reads it with the built-in
+`node:sqlite` (lazily imported — the board must keep working without it). The
+FTS schema lives in the indexer and is mirrored in `server/manuals.test.mjs`;
+change both together. See README "Manuals search".
 
 Verification before claiming done: `npm run typecheck` + `npm run build` green,
 and `npm run test` green. Pure logic must have Vitest tests (sun/time golden

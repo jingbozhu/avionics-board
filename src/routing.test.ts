@@ -15,9 +15,16 @@ describe('parseHash', () => {
     expect(parseHash('#')).toBe('display');
   });
 
-  it('maps anything non-admin to display', () => {
+  it('maps anything else to display', () => {
     expect(parseHash('#display')).toBe('display');
     expect(parseHash('#settings')).toBe('display');
     expect(parseHash('#ADMIN')).toBe('display'); // case-sensitive, faithful to source
+    expect(parseHash('#manualsx')).toBe('display');
+  });
+
+  it('maps #manuals and its deep links to manuals', () => {
+    expect(parseHash('#manuals')).toBe('manuals');
+    expect(parseHash('#/manuals')).toBe('manuals');
+    expect(parseHash('#manuals/bonding%20resistance')).toBe('manuals');
   });
 });

@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Global Avionics Operations Board — offline LAN kiosk dashboard (Preact + Vite + tiny Node server)",
+  "description": "Global Avionics Operations Board \u2014 offline LAN kiosk dashboard (Preact + Vite + tiny Node server)",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:server": "node --test \"server/**/*.test.mjs\"",
     "serve": "node server/index.mjs"
   },
   "dependencies": {

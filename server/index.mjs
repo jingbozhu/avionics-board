@@ -1,6 +1,7 @@
 // Global Avionics Operations Board — LAN kiosk server.
 //
-// Zero dependencies on purpose: ONLY node:http + node:fs. This is the single
+// Zero dependencies on purpose: ONLY node:http + node:fs (plus the built-in
+// node:sqlite, lazily, for manual search in ./manuals.mjs). This is the single
 // process that runs on the Raspberry Pi host; the three display TVs and the
 // admin browser all hit it over the LAN. It does two jobs:
 //
@@ -12,6 +13,8 @@
 //                             ~25s heartbeat comment, cleanup on close
 //        GET  /api/tickets -> admin bug/feature tickets, newest first
 //        POST /api/tickets -> {action:'create'|'close', ...}: mutate, persist, return list
+//        GET  /api/manuals* -> manual library / full-text search / PDF pages (see
+//                             ./manuals.mjs; read-only, uses Node's built-in SQLite)
 //
 // State persists to server/fleet-data.json (gitignored). When that file is
 // missing it is initialized from the inline 6-item seed below (identical to
@@ -21,6 +24,7 @@
 // into the fleet list, and the displays never show tickets anyway.
 import { createServer } from 'node:http';
 import { readFile, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { createManualsApi } from './manuals.mjs';
 
 // --- paths (no node:path / node:url — keep the import surface to http+fs) -----
 const HERE = import.meta.dirname; // .../avionics-board/server
@@ -29,6 +33,8 @@ const ROOT = HERE.slice(0, Math.max(HERE.lastIndexOf('/'), HERE.lastIndexOf('\\'
 const DIST = ROOT + '/dist';
 const DATA_FILE = HERE + '/fleet-data.json';
 const TICKETS_FILE = HERE + '/tickets.json';
+// Manual PDFs + their search index (manuals.db). Gitignored; see tools/index_manuals.py.
+const MANUALS_DIR = (process.env.MANUALS_DIR || ROOT + '/manuals').replace(/[\\/]+$/, '');
 
 const PORT = Number(process.env.PORT) || 8080;
 const HOST = '0.0.0.0'; // bind all interfaces so the LAN TVs can reach it
@@ -424,12 +430,17 @@ function handleStream(req, res) {
   });
 }
 
+// --- manuals search (read-only; never touches fleet/ticket state) -------------
+const manuals = createManualsApi({ dir: MANUALS_DIR });
+
 // --- router ------------------------------------------------------------------
 const server = createServer((req, res) => {
   const method = req.method;
   let pathname;
+  let url;
   try {
-    pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
+    url = new URL(req.url, 'http://localhost');
+    pathname = decodeURIComponent(url.pathname);
   } catch {
     send(res, 400, 'text/plain; charset=utf-8', 'Bad Request\n', method);
     return;
@@ -473,6 +484,15 @@ const server = createServer((req, res) => {
     return;
   }
 
+  if (pathname === '/api/manuals' || pathname.startsWith('/api/manuals/')) {
+    manuals.handle(req, res, pathname, url).catch((err) => {
+      console.error('[avionics] manuals request failed:', err.message);
+      if (!res.headersSent) sendJson(res, 500, { error: 'manuals request failed' }, method);
+      else res.destroy();
+    });
+    return;
+  }
+
   if (pathname.startsWith('/api/')) {
     sendJson(res, 404, { error: 'not found' }, method);
     return;
@@ -490,6 +510,7 @@ server.listen(PORT, HOST, () => {
   console.log(`[avionics] serving on http://${HOST}:${PORT}  (dist: ${DIST})`);
   console.log(`[avionics] fleet state: ${DATA_FILE} (${fleet.length} airframes)`);
   console.log(`[avionics] tickets: ${TICKETS_FILE} (${tickets.length})`);
+  console.log(`[avionics] manuals: ${MANUALS_DIR}`);
 });
 
 // --- graceful shutdown -------------------------------------------------------
@@ -504,6 +525,7 @@ function shutdown(signal) {
     }
   }
   clients.clear();
+  manuals.close();
   server.close(() => process.exit(0));
   // Don't hang forever if a socket is wedged.
   setTimeout(() => process.exit(0), 2000).unref?.();
