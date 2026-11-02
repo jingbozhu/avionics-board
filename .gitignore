@@ -7,3 +7,6 @@ server/fleet-data.json
 server/tickets.json
 # large source textures are kept out of the committed runtime bundle
 assets-src/
+# manual PDFs + their search index (built by tools/index_manuals.py; never in git)
+/manuals/
+__pycache__/

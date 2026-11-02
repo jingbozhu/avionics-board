@@ -70,7 +70,8 @@ bash deploy/install-server.sh   # build + install + start avionics-board.service
 | `npm run preview` | Preview the built `dist/` via Vite |
 | `npm run serve` | Run the dependency-free Node LAN server (`server/index.mjs`) |
 | `npm run typecheck` | `tsc --noEmit` |
-| `npm run test` | Vitest unit tests (sun/time, globe wrap, derive, fit, routing, auth, store) |
+| `npm run test` | Vitest unit tests (sun/time, globe wrap, derive, fit, routing, auth, store, manuals) |
+| `npm run test:server` | Node built-in test runner for the server (manual search query parsing, API, PDF ranges) |
 
 ## Fully offline by design
 
@@ -140,6 +141,53 @@ deploy/     systemd units + kiosk launcher + deployment notes
 docs/       DESIGN_BRIEF.md (ground-truth behaviors/tokens/globe math)
 BUILD_SPEC.md   The build contract
 ```
+
+## Manuals search (`#manuals`) — for the shop tablets
+
+Full-text search across every manual PDF, so nobody has to open chapters one by
+one. Type words, a phrase, a part number or an ATA ref; get a ranked list of
+pages (manual · bookmark section · page · highlighted snippet); tap one and the
+PDF opens **at that page** in the browser's own viewer (new tab, search stays put).
+With an empty box it shows the library to browse.
+
+```
+http://<server-pi-ip>:8080/#manuals                      search screen (bookmark this on the tablets)
+http://<server-pi-ip>:8080/#manuals/bonding%20resistance deep link straight to a search
+```
+
+**Set up (once), then re-run whenever a manual changes:**
+
+```bash
+mkdir -p manuals && cp /path/to/*.pdf manuals/   # subfolders are fine; manuals/ is gitignored
+pip install pymupdf                              # the indexer's only dependency
+python3 tools/index_manuals.py                   # → manuals/manuals.db (incremental on re-runs)
+```
+
+No server restart needed — the server picks up a new `manuals.db` on the next
+search. New revision of a manual? Copy it over the old file and re-run the
+indexer; only changed files are re-read. Optional `manuals/manuals.json` sets
+the title / revision / date shown per file (see the top of
+`tools/index_manuals.py`). The indexer warns about pages with no text (scans) —
+run those PDFs through `ocrmypdf` first.
+
+**Search syntax:** `bonding resistance` (all words) · `"bonding jumper"` (phrase)
+· `resist*` (prefix) · `VHF OR UHF` · part numbers / ATA refs as printed
+(`622-5132-101`, `34-20-00`). English word forms match (`resistance` ~ `resist`),
+and when nothing matches exactly it retries with every word as a prefix.
+
+**How it fits the rules above:** still no npm dependencies and still fully
+offline. The index is SQLite FTS5, read by Node's **built-in** `node:sqlite`, so
+the server needs **Node 22.13+** for this screen (on older Node the board runs
+as before and `#manuals` explains why search is off). The indexer is an offline
+build step like `npm run build`, so it can run on a PC: copy the whole
+`manuals/` folder (PDFs + `manuals.db`) to the Pi afterwards — paths inside are
+relative. Point `MANUALS_DIR` at a different folder if the PDFs live elsewhere.
+Rough size: ~200 MB of index for ~40k text pages; queries take tens of ms.
+
+API (same-origin, read-only — also usable by other tools later):
+`GET /api/manuals` (library) · `GET /api/manuals/search?q=&m=<manualId>&offset=`
+· `GET /api/manuals/pdf/<id>/<file>.pdf` (Range-capable). Server tests:
+`npm run test:server`.
 
 ## Where to run this — important caveat
 

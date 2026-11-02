@@ -1,16 +1,20 @@
-// Hash routing for the single-page board. Two routes share one page:
-//   - 'display' (default): the read-only TV board.
-//   - 'admin'   (#admin):  the squawk-gated fleet console.
-// We read `location.hash`; `#admin` -> admin, everything else -> display; and we
-// re-render on `hashchange`. No router library (see BUILD_SPEC hard rules).
+// Hash routing for the single-page board. Three routes share one page:
+//   - 'display' (default):  the read-only TV board.
+//   - 'admin'   (#admin):   the squawk-gated fleet console.
+//   - 'manuals' (#manuals): manual search for the shop tablets. A search can be
+//     deep-linked as #manuals/<url-encoded query> (see views/manuals/manuals.ts).
+// We read `location.hash` and re-render on `hashchange`. No router library
+// (see BUILD_SPEC hard rules).
 import { useEffect, useState } from 'preact/hooks';
 
-export type Route = 'admin' | 'display';
+export type Route = 'admin' | 'display' | 'manuals';
 
-/** Map a raw `location.hash` string to a route. `#admin` -> admin, else display. */
+/** Map a raw `location.hash` string to a route. Unknown hashes -> display. */
 export function parseHash(hash: string): Route {
   const h = hash.replace(/^#/, '').replace(/^\//, '');
-  return h === 'admin' ? 'admin' : 'display';
+  if (h === 'admin') return 'admin';
+  if (h === 'manuals' || h.startsWith('manuals/')) return 'manuals';
+  return 'display';
 }
 
 /** Read the current route now (safe outside the browser too). */
@@ -21,7 +25,7 @@ function currentRoute(): Route {
 /** Navigate by setting the hash; '' clears it back to the display route. */
 export function goto(route: Route): void {
   if (typeof location === 'undefined') return;
-  location.hash = route === 'admin' ? 'admin' : '';
+  location.hash = route === 'display' ? '' : route;
 }
 
 /** Live route, re-rendered on every `hashchange`. */

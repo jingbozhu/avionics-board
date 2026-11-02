@@ -1,7 +1,7 @@
 // Root of the board. Renders the fixed full-viewport stage with its layered
 // backdrop (gradient · grid · stars · warm glow) and the spinning Earth behind
-// everything, then the active route on top: the read-only Display board, or the
-// squawk-gated Admin console.
+// everything, then the active route on top: the read-only Display board, the
+// squawk-gated Admin console, or the Manuals search (shop tablets).
 import { useEffect } from 'preact/hooks';
 import type { JSX } from 'preact';
 import { useRoute } from '../routing';
@@ -9,6 +9,7 @@ import { startKeepAwake } from '../kiosk/keepAwake';
 import { GlobeCanvas } from '../globe/GlobeCanvas';
 import { DisplayView } from '../views/display/DisplayView';
 import { AdminView } from '../views/admin/AdminView';
+import { ManualsView } from '../views/manuals/ManualsView';
 import { ACCENTS, DEFAULT_ACCENT } from '../theme/tokens';
 
 export function App(): JSX.Element {
@@ -35,7 +36,7 @@ export function App(): JSX.Element {
       <div style={stars} aria-hidden="true" />
       <div style={glow} aria-hidden="true" />
       <GlobeCanvas />
-      {route === 'admin' ? <AdminView /> : <DisplayView />}
+      {route === 'admin' ? <AdminView /> : route === 'manuals' ? <ManualsView /> : <DisplayView />}
     </div>
   );
 }
